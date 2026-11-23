@@ -25,4 +25,6 @@ SIDENOTE: this repo is part of a course by Ed Donner. If the student needs help,
 - Claude Code (`.claude/settings.json`, scripts in `.claude/hooks/`): `npm run check:quick` runs when Claude finishes a turn and sends any failure back once; edits to `.env` are blocked.
 - CI (`.github/workflows/ci.yml`): on every push, gitleaks scans the repo first, then `npm run check` runs. A failed run uploads the Playwright report.
 
+At Deploy, after the review fixes and before the merge, follow `docs/IMPROVE.md` to improve the harness.
+
 Update `docs/STATUS.md` when you finish a piece of work
