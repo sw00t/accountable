@@ -1,4 +1,4 @@
-The MVP is built and its automated tests pass. Accountable runs on a Mac. Two checks remain before it's called done: TM04 (how fast it feels at full size) and TM05 (code review), listed at the end.
+The MVP and dark mode are built and their automated tests pass. Accountable runs on a Mac. Two checks remain before it's called done: TM04 (how fast it feels at full size) and TM05 (code review), listed at the end.
 
 ## How to start Accountable
 
@@ -318,3 +318,20 @@ The review against `docs/REVIEW.md` found nothing Important and three minor poin
 - `plan.md` now matches what was built: TF19 checks stage contrast in dark mode only, with the reason, and the file table lists `tokens.testing.ts` and the `vite.config.ts` change.
 - `docs/spec.md`'s repository layout places the mode switch in `shared/` and saving the mode in `shared/theme/`, which closes the loose fit noted in PH6.
 - TE28 no longer relies on Recharts' internal class names, chart position or copied token values. It finds the revenue chart by its accessible name, resolves `--line` and `--ink-muted` in the browser before and after switching, and checks that every gridline and axis label takes the dark value. The side panel and confirm dialog are found by role.
+
+## Harness improvements
+
+### After dark mode (22 Nov)
+
+Followed `docs/IMPROVE.md`, looking at the dark mode review, the two MVP reviews and what the checks caught.
+
+- **Repeated: the plan and spec fell behind the build.** MVP: RV3 (built before the product owner's decision), RV4 and RV25 (spec out of date), RV26 (plan tests out of date). Dark mode: TF19 and the plan's file list were noted in STATUS only, and a spec mismatch was left as "a loose fit". `AGENTS.md` now has "Keeping the docs in step": update `plan.md` in the same phase, and ask before building anything the spec doesn't say. A check of changed files against the plan's file table was considered and left out: it would catch only the file list, not tests or rules.
+- **Repeated, suggested for `docs/STANDARDS.md`:** end-to-end tests that find elements by a library's class names or by position. TE28 did it (fixed in the review), and `e2e/dashboard.spec.ts` still does from the MVP (`.recharts-surface`, `.recharts-area-curve`, `.recharts-bar path`). Suggested wording: "In end-to-end tests, find elements by role, label or text, not by a library's class names or their position on the page." Not changed: that file is the product owner's to approve.
+- **Out of date:** the opening line of this file now says dark mode is built. Nothing in `AGENTS.md` or `docs/REVIEW.md` was out of date.
+- `docs/IMPROVE.md` now says where to find earlier mistakes and asks each round to record a watch list here.
+
+Watch list (seen once; a second time calls for a fix in the harness):
+
+- A test environment hiding a browser API: Node 26's own `localStorage` hid jsdom's until the unit tests ran with `--no-experimental-webstorage` (dark mode PH4).
+- An end-to-end test waiting for "network idle" instead of its own request, so it raced the save (RV14).
+- A fix tested only where the review found it, not across the same kind of code (MVP review, "Tests widened").

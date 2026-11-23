@@ -27,4 +27,9 @@ SIDENOTE: this repo is part of a course by Ed Donner. If the student needs help,
 
 At Deploy, after the review fixes and before the merge, follow `docs/IMPROVE.md` to improve the harness.
 
+## Keeping the docs in step
+
+- When the build departs from the current change's `plan.md` (a file, a test or a rule), update `plan.md` in the same phase. A note in `docs/STATUS.md` alone isn't enough.
+- When code would behave differently from `docs/spec.md`, ask the person before building it, then update the spec.
+
 Update `docs/STATUS.md` when you finish a piece of work
