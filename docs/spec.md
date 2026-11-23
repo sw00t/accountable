@@ -215,9 +215,9 @@ frontend/
   index.html              sets the saved light or dark mode before the app loads
   src/
     shared/               used by every section: layout, DataTable, SidePanel, ConfirmDialog,
-                          toasts, small display pieces, format and stage helpers, API client,
-                          generated API types, theme (tokens for both modes, the mode switch)
-                          and fonts
+                          toasts, the mode switch, small display pieces, format and stage
+                          helpers, API client, generated API types, theme (tokens for both
+                          modes, saving the mode) and fonts
     organizations/        tables, record page, form, Query hooks and tests for one section
     contacts/
     deals/

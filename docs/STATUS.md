@@ -310,3 +310,11 @@ Following `docs/changes/dark-mode/plan.md`, phase by phase.
 - `docs/spec.md` checked against what was built: it matches, so it's unchanged. One loose fit: the repository layout lists "the mode switch" under `shared/` theme; the switch component is `shared/ThemeSwitch.tsx`, next to the sidebar that uses it, with its logic in `shared/theme/mode.ts`, as the plan placed them.
 - Beyond the plan's file list: `shared/theme/tokens.testing.ts` (reads `tokens.css` per mode for both token tests) and `frontend/vite.config.ts` (see PH4).
 - SC1: `npm run check` passes (433 unit tests, 45 end-to-end tests). SC2: TE24. SC3: the four screenshots.
+
+### Review fixes
+
+The review against `docs/REVIEW.md` found nothing Important and three minor points, all fixed.
+
+- `plan.md` now matches what was built: TF19 checks stage contrast in dark mode only, with the reason, and the file table lists `tokens.testing.ts` and the `vite.config.ts` change.
+- `docs/spec.md`'s repository layout places the mode switch in `shared/` and saving the mode in `shared/theme/`, which closes the loose fit noted in PH6.
+- TE28 no longer relies on Recharts' internal class names, chart position or copied token values. It finds the revenue chart by its accessible name, resolves `--line` and `--ink-muted` in the browser before and after switching, and checks that every gridline and axis label takes the dark value. The side panel and confirm dialog are found by role.

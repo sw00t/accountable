@@ -17,6 +17,8 @@ IDs: M1 to M5 and CN12 to CN15 are the spec's [Light and dark mode](../../spec.m
 | `frontend/src/shared/Sidebar.tsx` | Renders the switch below the five links | [W4.3](#w4-3) | Changed |
 | `frontend/src/shared/theme/colors.test.ts` | Reads the light and dark blocks separately (TF18) | [W2.3](#w2-3), [W3.2](#w3-2) | Changed |
 | `frontend/src/shared/theme/contrast.test.ts` | Contrast of every text and surface pair in both modes (TF19) | [W3.2](#w3-2) | New |
+| `frontend/src/shared/theme/tokens.testing.ts` | Reads `tokens.css` from disk, one block per mode, for TF18 and TF19 | [W2.3](#w2-3), [W3.2](#w3-2) | New |
+| `frontend/vite.config.ts` | The unit tests run Node with `--no-experimental-webstorage`, so Node's own `localStorage` global doesn't hide jsdom's (TF20, TF21) | [W4.2](#w4-2) | Changed |
 | `frontend/src/shared/theme/mode.test.ts` | TF20 | [W4.2](#w4-2) | New |
 | `frontend/src/shared/ThemeSwitch.test.tsx` | TF21 | [W4.3](#w4-3) | New |
 | `e2e/dark-mode.spec.ts` | TE23 to TE29 | [W4.4](#w4-4), [W5.3](#w5-3) | New |
@@ -87,7 +89,7 @@ Phases run in order. Each ends with `npm run check` passing and a short note in 
 | ID | File in `frontend/src/` | Proves | Requirements | Risks |
 | --- | --- | --- | --- | --- |
 | <a id="tf18"></a>TF18 | `shared/theme/colors.test.ts` | No file outside `tokens.css` names a color, and every token used exists (as before). The dark block only overrides tokens the light block defines. The five brand colors, `--midnight`, `--sea-mist`, `--raspberry-fill` and `--cerulean-fill` match the spec and are the same in both modes. The open stages are reversed in dark mode. | IC3, CN13, CN14, CN15 | [R1](#r1) |
-| <a id="tf19"></a>TF19 | `shared/theme/contrast.test.ts` | Every text and surface pair in the spec's Colors table is at least 4.5:1 in both modes, white on Cerulean and Raspberry is at least 3:1 for large or bold text, and every stage color is at least 3:1 against the panel in both modes | M5, IC4 | [R6](#r6) |
+| <a id="tf19"></a>TF19 | `shared/theme/contrast.test.ts` | Every text and surface pair in the spec's Colors table is at least 4.5:1 in both modes, white on Cerulean and Raspberry is at least 3:1 for large or bold text, and every stage color is at least 3:1 against the page and the panel in dark mode. Light mode's pale stages never met 3:1 on white (New is 1.6:1) and light mode can't change (IC2), so the check is dark only, as in the spec. | M5, IC4 | [R6](#r6) |
 | <a id="tf20"></a>TF20 | `shared/theme/mode.test.ts` | The mode is light when `<html>` has no attribute and dark when it has `data-theme="dark"`. `setMode` changes the attribute and saves `light` or `dark` under `accountable.theme`. When storage throws, the mode still changes and nothing is thrown or logged. `index.html`'s inline script uses the same key and value. | M1, M2 | [R3](#r3) |
 | <a id="tf21"></a>TF21 | `shared/ThemeSwitch.test.tsx` | A switch named "Dark mode", off on a light page and on when `<html>` is already dark. Clicking it or pressing Space turns dark mode on and off, and `aria-checked` follows. | M1 | [R9](#r9) |
 
