@@ -18,6 +18,8 @@ It has five sections:
 - **Deals**: the potential sales, with their stage, value and close date, and a timeline each.
 - **Pipeline**: the deals as cards on a board, one column per stage. Dragging a card changes its stage or its place, and dragging into Won or Lost closes the deal.
 
+Every page can be shown in light mode, the default, or dark mode. A switch at the bottom of the sidebar changes it, and the app remembers the choice.
+
 ### Users
 
 - One salesperson, using Accountable on their own computer every day. The rest of the sales team joins later.
@@ -38,7 +40,7 @@ Accountable is working when:
 Questions settled while the product was designed. They're numbered because requirements, tests and code refer to them.
 
 1. **A deal's organization is required, but deleting an organization leaves deals with none.** The organization is required when a deal is created, and when it's edited unless it's already empty. A deal with no organization shows "No organization" and a quiet prompt to pick one.
-2. **Six pipeline stages, five brand colors.** The brand gives five colors in order for things side by side. The four open stages use a sequential Cerulean scale (light to dark, since the stages are ordered), Won uses Sea Green and Lost uses Raspberry. Chart series use the brand order. See [Stage colors](#stage-colors).
+2. **Six pipeline stages, five brand colors.** The brand gives five colors in order for things side by side. The four open stages use a sequential Cerulean scale (light to dark, since the stages are ordered), Won uses Sea Green and Lost uses Raspberry. Chart series use the brand order. In dark mode the open stages use the same four colors in reverse order (Concern 14). See [Stage colors](#stage-colors).
 3. **Two brand pairings fail contrast for small text.** White on Cerulean is 3.96:1 and white on Raspberry is 3.62:1, under the 4.5:1 needed for normal text. The brand colors are used for fills, charts and large or bold text, and darker text shades are used for small text. See [Colors](#colors).
 4. **Offline use and Google Fonts.** The brand fonts come from Google Fonts, but the app must work with no internet connection. The fonts are installed as npm packages (Fontsource) and served locally.
 5. **A non-technical user and a terminal command.** `npm run dev` needs Node.js and uv installed, and a terminal to run it. `docs/STATUS.md` has a plain, step-by-step setup guide for Mac with links to the installers, and the command opens the browser by itself. There's no double-click launcher.
@@ -48,6 +50,10 @@ Questions settled while the product was designed. They're numbered because requi
 9. **What deletes take with them.** Deleting a contact removes the activities logged on them, and deleting a deal removes its activities and stage changes.
 10. **The window for "upcoming" follow-ups.** Overdue means a follow-up date before today, and upcoming means today or the next 7 days. Later follow-ups appear on the timelines but not on the dashboard.
 11. **The sample data dates.** For the dashboard to look alive whenever it's seeded, the sample data is generated relative to today's date, with a fixed random seed so its shape is the same each time.
+12. **Where the light or dark choice is kept.** G3 saves every change to the database, but the mode is a preference of this browser, not business data. It's kept in the browser's local storage, so it can be applied before the page first paints and a dark page never flashes light. The cost: it doesn't follow the salesperson to another browser, and clearing browser data resets it to light. The app doesn't follow the computer's own dark mode setting.
+13. **Text shades and fills split in dark mode.** In light mode the darker text shades (Concern 3) also serve as fills behind small white text, such as the Late badge. In dark mode the text shades get lighter, as the brand asks, so they can't carry white text any more. The fills behind small white text have their own tokens, `--raspberry-fill` and `--cerulean-fill`, which keep the dark shades in both modes.
+14. **The stage scale on a dark background.** In light mode the open stages run from pale Cerulean (New) to full Cerulean (Negotiation), so later stages stand out more against white. On black, the same order would make New the brightest. Dark mode uses the same four colors the other way round, New at full Cerulean and Negotiation palest, so later stages still stand out most. Mixing Cerulean toward black instead was ruled out: the early stages would sit under 3:1 against the black panels and be hard to see.
+15. **Midnight does two jobs.** In light mode Midnight is both the text color and a fixed surface: the sidebar, toasts and chart tooltips, and the text on Sea Green, Marigold and Coral fills. In dark mode the text turns Sea Mist but the surfaces and the text on bright fills stay Midnight. So `--ink` is the text color that changes with the mode, and `--midnight` is the brand color that doesn't.
 
 ## Requirements
 
@@ -57,7 +63,7 @@ Each requirement has an ID so tests, code and status notes can refer to it.
 
 - **G1** The app runs with `npm run dev` on a Mac, opens at `http://localhost:5173` and lands on the dashboard.
 - **G2** It works with no internet connection once installed. Nothing is loaded from a CDN or a font service at run time.
-- **G3** Every change is saved to the SQLite database at once. It's still there after a refresh and after a restart.
+- **G3** Every change is saved to the SQLite database at once. It's still there after a refresh and after a restart. The one exception is the light or dark choice, which the browser keeps (M2).
 - **G4** When the database file doesn't exist, the backend creates it by running the migrations and fills it with the sample data.
 - **G5** `npm run seed` deletes all data and loads the sample data again.
 - **G6** The app is a single-user app with no sign-in. The backend answers only requests addressed to this computer (`127.0.0.1` or `localhost`), so a web page elsewhere can't reach the data.
@@ -67,6 +73,14 @@ Each requirement has an ID so tests, code and status notes can refer to it.
 - **G10** Dates are shown as `16 Nov 2026`. The app uses the computer's local date for "today".
 - **G11** No errors appear in the browser console during normal use. One exception: opening a link to a record that has been deleted logs the server's 404 reply, while the page says the record can't be found.
 - **G12** Each time it starts, the backend applies any new database migrations, keeping all existing data.
+
+### Light and dark mode
+
+- **M1** Light mode is the default. A "Dark mode" switch with a moon icon sits at the bottom of the sidebar, below the five links, so it's on every page. Clicking it, or pressing Space when it has keyboard focus, turns dark mode on or off at once. Screen readers announce it as a switch that's on or off.
+- **M2** The choice is remembered in this browser after a refresh and after a restart, and the page opens in that mode with no flash of the other one (Concern 12). If the browser won't store it, the app opens in light mode and the switch still works until the page is closed, with no error shown or logged.
+- **M3** Everything follows the mode: every section and page, tables, forms and side panels, confirm dialogs, toasts, field errors, the pipeline board and its cards, the dashboard's charts with their gridlines, axis labels and tooltips, the funnel, badges, chips and empty states.
+- **M4** Changing the mode changes colors only. Layout, sizes, fonts and content stay the same, the page doesn't reload, and a form being filled in keeps what was typed.
+- **M5** Text meets the same contrast rules in both modes: at least 4.5:1 for small text and 3:1 for large or bold text, against every surface it sits on. See [Colors](#colors).
 
 ### Tables (organizations, contacts and deals)
 
@@ -172,6 +186,7 @@ SQLite file: data/accountable.db
 - The frontend fetches lists in full and does search, sort and paging in the browser. At the sizes in G7 that's a few hundred kilobytes and keeps every keystroke instant. The API keeps limit and offset parameters so this can move to the server when the data grows; `limit` is at most 1,000.
 - The dashboard figures are computed by the backend in one request, so the browser doesn't have to load every activity.
 - The backend is the only place business rules live: stage probabilities, close dates on Won and Lost, customer status, stage-change entries and delete rules. The frontend shows the result.
+- Light and dark mode live in the frontend alone. Dark mode is the attribute `data-theme="dark"` on the page's `<html>` element, and `tokens.css` gives every color token its dark value under that attribute. Components, stylesheets and charts refer only to tokens, so they follow the mode with no code of their own. A few lines of script in `frontend/index.html` read the saved choice from local storage (key `accountable.theme`, value `light` or `dark`) and set the attribute before the app's first paint. The sidebar switch changes the attribute and saves the choice.
 
 ### Repository layout
 
@@ -197,10 +212,12 @@ backend/
   migrations/             Alembic migrations, starting with the first schema
   tests/                  pytest
 frontend/
+  index.html              sets the saved light or dark mode before the app loads
   src/
     shared/               used by every section: layout, DataTable, SidePanel, ConfirmDialog,
                           toasts, small display pieces, format and stage helpers, API client,
-                          generated API types, theme and fonts
+                          generated API types, theme (tokens for both modes, the mode switch)
+                          and fonts
     organizations/        tables, record page, form, Query hooks and tests for one section
     contacts/
     deals/
@@ -325,13 +342,15 @@ The `today` date comes from the browser in an `X-Local-Date` header, so "late", 
 
 ### Screens
 
-The look follows Accountable's brand guidelines, which take priority over any general design guidance (see [Brand](#brand)). It's light mode, designed for a laptop or desktop screen. The chosen look is in `docs/mockups/final-dashboard.html` and `docs/mockups/final-pipeline.html`, with a screenshot of each beside it. It's mockup A with the funnel from mockup C and the probability ring from mockup B. Where this section and the mockups differ, this section wins.
+The look follows Accountable's brand guidelines, which take priority over any general design guidance (see [Brand](#brand)). It comes in light mode and dark mode, designed for a laptop or desktop screen. The chosen light look is in `docs/mockups/final-dashboard.html` and `docs/mockups/final-pipeline.html`, with a screenshot of each beside it. It's mockup A with the funnel from mockup C and the probability ring from mockup B. Dark mode is the same layout with the dark colors; screenshots of the dashboard and the pipeline in both modes are in `docs/changes/dark-mode/`. Where this section and the mockups or screenshots differ, this section wins.
 
-**Layout.** A fixed left sidebar on Midnight with the Accountable wordmark and five links: Dashboard, Pipeline, Deals, Contacts, Organizations. The active link has a Sea Green pill behind it. Content sits on the light page background in white panels with 12 px rounded corners, no outlines and a soft shadow. The minimum supported width is 1280 px.
+**Layout.** A fixed left sidebar on Midnight with the Accountable wordmark and five links: Dashboard, Pipeline, Deals, Contacts, Organizations. The active link has a Sea Green pill behind it. The "Dark mode" switch (M1) is pinned to the bottom of the sidebar, in Sea Mist with a Sea Green track when on. Content sits on the page background in panels with 12 px rounded corners, no outlines and a soft shadow. The minimum supported width is 1280 px.
+
+**Dark mode.** The page background is `#04232E` and panels, cards, side panels and dialogs are black, with Sea Mist text, as the brand sets out. The sidebar, toasts and chart tooltips stay Midnight in both modes; on the dark page the sidebar is a shade lighter than the page, so it still stands apart. Primary buttons stay Sea Green with Midnight text, the Late badge and date chips keep their dark fills with white text (Concern 13), and status pills use a dark tint of their color with the lighter text shade. Shadows are deeper so panels still lift off the page. Chart gridlines and axis labels use the dark tokens; the series and the fill under the revenue line keep their brand colors.
 
 **Page header.** Each page has its title in Instrument Sans 28 px semibold, a short count or summary under it, and the main action (such as "Add contact") on the right as a Sea Green button with Midnight text.
 
-**Tables.** A white panel with the search box and filters above the rows. Rows are 48 px high, with a light hover tint and the Edit and Delete icons shown on hover and on keyboard focus. Numbers and money are right-aligned in JetBrains Mono.
+**Tables.** A panel with the search box and filters above the rows. Rows are 48 px high, with a light hover tint and the Edit and Delete icons shown on hover and on keyboard focus. Numbers and money are right-aligned in JetBrains Mono.
 
 **Forms.** A side panel slides in from the right, 480 px wide, with fields stacked in one column, labels above fields and required fields marked. Save is the primary button; Cancel and Escape close it. Enter in the last field saves.
 
@@ -339,7 +358,7 @@ The look follows Accountable's brand guidelines, which take priority over any ge
 
 **Timeline.** A vertical list with a small icon per type (note, call, email, stage change), the description, the date, and for deal entries on a contact the deal name as a link. Follow-ups show a date chip: Raspberry when overdue, Cerulean when upcoming, grey with a check when done.
 
-**Pipeline.** Six columns side by side filling the width, each 1/6 wide with a minimum of 196 px and the board scrolling sideways below that. Each column header has a stage-colored dot, the stage name, the count, and the total and expected revenue in JetBrains Mono. Cards are white, compact and lift with a stronger shadow while dragged. A card shows the deal name, then the organization and main contact, then the value with the probability ring on the right, then the close date and any Late badge. The probability ring is a small circle (30 px) with the percentage in its center and an arc filled to that percentage in the stage's color. Cards in Won and Lost show no ring and say "Closed" before the date. While a card is dragged, a Sea Green line shows where it will land. Won and Lost columns have a faint tint of their stage color so they read as closed.
+**Pipeline.** Six columns side by side filling the width, each 1/6 wide with a minimum of 196 px and the board scrolling sideways below that. Each column header has a stage-colored dot, the stage name, the count, and the total and expected revenue in JetBrains Mono. Cards are white (black in dark mode), compact and lift with a stronger shadow while dragged. A card shows the deal name, then the organization and main contact, then the value with the probability ring on the right, then the close date and any Late badge. The probability ring is a small circle (30 px) with the percentage in its center and an arc filled to that percentage in the stage's color. Cards in Won and Lost show no ring and say "Closed" before the date. While a card is dragged, a Sea Green line shows where it will land. Won and Lost columns have a faint tint of their stage color so they read as closed.
 
 **Dashboard.** A 12-column grid:
 
@@ -356,38 +375,43 @@ Charts have light gridlines, no chart borders, tooltips with exact amounts and a
 
 #### Colors
 
-Defined once as CSS variables in `frontend/src/shared/theme/tokens.css`.
+Defined once as CSS variables in `frontend/src/shared/theme/tokens.css`: the light values under `:root`, and the dark values under `:root[data-theme="dark"]`, which only overrides tokens the light block already defines. Nothing else in the frontend names a color. Where the two columns match, the token is the same in both modes. Contrast figures are on white in light mode, as before, and on the `#04232E` page in dark mode, the dark surface that gives text the least contrast; the black panels, row hover and status tints only raise them.
 
-| Token | Value | Use |
-| --- | --- | --- |
-| `--page` | `#F0F4F5` | page background |
-| `--panel` | `#FFFFFF` | panels and cards |
-| `--ink` | `#073B4C` | text, sidebar background |
-| `--ink-muted` | `#5B7A84` | secondary text on white only (4.6:1) |
-| `--sea-green` | `#06D6A0` | primary buttons and fills, Midnight text |
-| `--marigold` | `#FFC145` | secondary fills, Midnight text |
-| `--coral` | `#F78C6B` | tertiary fills, Midnight text |
-| `--cerulean` | `#118AB2` | information fills, large or bold white text |
-| `--raspberry` | `#EF476F` | alerts and Lost, large or bold white text |
-| `--sea-green-text` | `#047A5C` | Sea Green small text on light (5.3:1) |
-| `--marigold-text` | `#8A5D00` | Marigold small text on light (5.8:1) |
-| `--coral-text` | `#B5452A` | Coral small text on light (5.5:1) |
-| `--cerulean-text` | `#0E7596` | Cerulean small text, links (5.3:1) |
-| `--raspberry-text` | `#C42350` | Raspberry small text, field errors (5.7:1) |
-| `--sea-mist` | `#CDD8DB` | text on the Midnight sidebar |
+| Token | Light | Dark | Use |
+| --- | --- | --- | --- |
+| `--page` | `#F0F4F5` | `#04232E` | page background |
+| `--panel` | `#FFFFFF` | `#000000` | panels, cards, side panels and dialogs |
+| `--ink` | `#073B4C` | `#CDD8DB` | text (dark: 11.2:1) |
+| `--ink-muted` | `#5B7A84` | `#8EA7AF` | secondary text; light on white only (4.6:1), dark on any surface (6.5:1) |
+| `--midnight` | `#073B4C` | `#073B4C` | sidebar, toasts and chart tooltips; text on Sea Green, Marigold and Coral fills (Concern 15) |
+| `--sea-mist` | `#CDD8DB` | `#CDD8DB` | text on Midnight (8.3:1) |
+| `--sea-green` | `#06D6A0` | `#06D6A0` | primary buttons and fills, Midnight text (6.4:1) |
+| `--marigold` | `#FFC145` | `#FFC145` | secondary fills, Midnight text |
+| `--coral` | `#F78C6B` | `#F78C6B` | tertiary fills, Midnight text |
+| `--cerulean` | `#118AB2` | `#118AB2` | information fills, focus outlines, large or bold white text |
+| `--raspberry` | `#EF476F` | `#EF476F` | alerts and Lost, large or bold white text |
+| `--sea-green-text` | `#047A5C` | `#4BE3B9` | Sea Green small text (light 5.3:1, dark 10.1:1) |
+| `--marigold-text` | `#8A5D00` | `#FFD27A` | Marigold small text (light 5.8:1, dark 11.5:1) |
+| `--coral-text` | `#B5452A` | `#FFA88C` | Coral small text (light 5.5:1, dark 8.7:1) |
+| `--cerulean-text` | `#0E7596` | `#5EC2E6` | Cerulean small text, links (light 5.3:1, dark 8.0:1) |
+| `--raspberry-text` | `#C42350` | `#FF8FA8` | Raspberry small text, field errors (light 5.7:1, dark 7.6:1) |
+| `--raspberry-fill` | `#C42350` | `#C42350` | behind small white text: Late badge, overdue chip, danger buttons (5.7:1) |
+| `--cerulean-fill` | `#0E7596` | `#0E7596` | behind small white text: upcoming chip (5.3:1) |
 
-Badges with small white text use the darker text shades as their fill. Dark mode tokens are left for later.
+The lines, hover tints, table header, form fields, status tints, column washes, scrim and shadows have dark values in `tokens.css` too, chosen so every pair above still meets M5. Light mode's values are the ones it had before dark mode was added.
 
 #### Stage colors
 
-| Stage | Color |
-| --- | --- |
-| New | Cerulean at 35% |
-| Qualified | Cerulean at 60% |
-| Proposal | Cerulean at 80% |
-| Negotiation | Cerulean |
-| Won | Sea Green |
-| Lost | Raspberry |
+| Stage | Light | Dark |
+| --- | --- | --- |
+| New | Cerulean at 35% (`#ACD6E4`) | Cerulean (`#118AB2`) |
+| Qualified | Cerulean at 60% (`#70B9D1`) | Cerulean at 80% (`#41A1C1`) |
+| Proposal | Cerulean at 80% (`#41A1C1`) | Cerulean at 60% (`#70B9D1`) |
+| Negotiation | Cerulean (`#118AB2`) | Cerulean at 35% (`#ACD6E4`) |
+| Won | Sea Green | Sea Green |
+| Lost | Raspberry | Raspberry |
+
+The percentages are Cerulean mixed with white. Dark mode reverses the open stages (Concern 14), so in both modes the later stages stand out most from the panel. Every stage color is at least 4.1:1 against the dark page and 5.3:1 against black.
 
 **Things to avoid.** No border on one edge of a panel, no single-line rule across the top of the page, and no gradients except the one under the revenue line.
 
@@ -396,14 +420,14 @@ Badges with small white text use the darker text shades as their fill. Dark mode
 ### Testing
 
 - **Backend (pytest)**: every rule in D3 to D7, the delete rules in O4, C6 and D10, the timeline contents in C5, card positions and renumbering, validation messages, and each dashboard figure against a small hand-made data set.
-- **Frontend (Vitest)**: money and date formatting, the table's search, sort and paging, form validation messages, and the optimistic update and rollback on the board.
-- **End to end (Playwright with installed Chrome)**: the user journeys, against a fresh seeded test database on its own port. They cover adding, searching, sorting, editing and deleting in each table; the status filter; dragging a card between columns and within a column and checking it after a reload; logging an activity with a follow-up and seeing it on the dashboard; marking a deal won and seeing the dashboard change; and no console errors on any page.
+- **Frontend (Vitest)**: money and date formatting, the table's search, sort and paging, form validation messages, the optimistic update and rollback on the board, and the mode switch (M1, M2, including a browser that won't store the choice). A token test reads `tokens.css` and checks that no file outside it names a color, that the dark block only overrides tokens the light block defines, and that each text and surface pair in the Colors table meets M5 in both modes.
+- **End to end (Playwright with installed Chrome)**: the user journeys, against a fresh seeded test database on its own port. They cover adding, searching, sorting, editing and deleting in each table; the status filter; dragging a card between columns and within a column and checking it after a reload; logging an activity with a follow-up and seeing it on the dashboard; marking a deal won and seeing the dashboard change; turning dark mode on, finding it still on after a reload and turning it off again; and no console errors on any page in either mode.
 - The tests set the backend's database path with an environment variable, so they never touch `data/accountable.db`.
 - Passing tests is necessary but not enough. Before a change is called done, a person uses what it touched end to end in a real browser, the way a salesperson would, with the browser's console open, and the result is noted in `docs/STATUS.md`.
 
 ### Not in Accountable yet
 
-Sign-in, user accounts and several users; a record of who did what; access from beyond the computer it runs on; dark mode and phone layouts; AI features; email, calendar and phone integrations; currencies other than US dollars; reports beyond the dashboard; tags and custom fields; changing the pipeline stages; and import or export.
+Sign-in, user accounts and several users; a record of who did what; access from beyond the computer it runs on; following the computer's own dark mode setting; phone layouts; AI features; email, calendar and phone integrations; currencies other than US dollars; reports beyond the dashboard; tags and custom fields; changing the pipeline stages; and import or export.
 
 ## Roadmap
 
