@@ -1,8 +1,11 @@
-/* Brand tokens (docs/spec.md, Brand). Light mode only for the MVP. */
+/* Brand tokens (docs/spec.md, Colors). Light mode here; dark mode overrides some below. */
 :root {
+  color-scheme: light;
   --page: #f0f4f5;
   --panel: #ffffff;
   --ink: #073b4c;
+  /* Midnight as a fixed surface and as text on bright fills; --ink is the text color (Concern 15). */
+  --midnight: #073b4c;
   --ink-muted: #5b7a84;
   --line: #e3eaec;
   --hover: #f5f8f9;
@@ -20,6 +23,10 @@
   --cerulean-text: #0e7596;
   --raspberry-text: #c42350;
   --sea-mist: #cdd8db;
+
+  /* Fills behind small white text, the same in both modes (Concern 13). */
+  --raspberry-fill: #c42350;
+  --cerulean-fill: #0e7596;
 
   /* Stage colors (Concern 2): a Cerulean scale for open stages, then Won and Lost. */
   --stage-new: #acd6e4;
@@ -58,4 +65,51 @@
   --sans: "Instrument Sans", system-ui, sans-serif;
   --serif: "Instrument Serif", Georgia, serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Dark mode (spec M3, M5): only the tokens that change. Set on <html> by index.html and mode.ts. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --page: #04232e;
+  --panel: #000000;
+  --ink: #cdd8db;
+  --ink-muted: #8ea7af;
+  --line: #1b3a44;
+  /* Darker than the page, so text on them keeps at least its contrast on the page. */
+  --hover: #031c24;
+  --table-head: #020f14;
+  --field: #000000;
+  --field-border: #2e4c56;
+
+  /* Lighter text shades for small text on dark surfaces (Concern 3). */
+  --sea-green-text: #4be3b9;
+  --marigold-text: #ffd27a;
+  --coral-text: #ffa88c;
+  --cerulean-text: #5ec2e6;
+  --raspberry-text: #ff8fa8;
+
+  /* The open stages reversed, so later stages still stand out most (Concern 14). */
+  --stage-new: #118ab2;
+  --stage-qualified: #41a1c1;
+  --stage-proposal: #70b9d1;
+  --stage-negotiation: #acd6e4;
+
+  --tint-sea-green: #01241b;
+  --tint-marigold: #291d00;
+  --tint-cerulean: #02203a;
+  --tint-raspberry: #3a0a18;
+
+  /* The total part of a stage bar is its color dimmed, where light mode pales it. */
+  --bar-sheen: rgba(0, 0, 0, 0.55);
+  --stage-total-key: #32535e;
+  --scrim: rgba(7, 59, 76, 0.6);
+  --column: rgba(205, 216, 219, 0.05);
+  --ink-wash: rgba(205, 216, 219, 0.08);
+
+  /* Deeper shadows, so black panels still lift off the dark page (R8). */
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lifted: 0 12px 32px rgba(0, 0, 0, 0.7);
+  --shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-panel: -8px 0 32px rgba(0, 0, 0, 0.6);
 }

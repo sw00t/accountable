@@ -89,7 +89,7 @@ textarea {
   align-items: center;
   gap: 6px;
   font: 600 14px var(--sans);
-  color: var(--ink);
+  color: var(--midnight);
   background: var(--sea-green);
   border: 0;
   border-radius: 8px;
@@ -105,6 +105,7 @@ textarea {
   cursor: default;
 }
 .btn.ghost {
+  color: var(--ink);
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--line);
 }
@@ -112,7 +113,7 @@ textarea {
   background: var(--hover);
 }
 .btn.danger {
-  background: var(--raspberry-text);
+  background: var(--raspberry-fill);
   color: var(--on-dark);
 }
 .btn.small {
@@ -167,7 +168,7 @@ textarea {
   white-space: nowrap;
 }
 .badge.late {
-  background: var(--raspberry-text);
+  background: var(--raspberry-fill);
 }
 .chip {
   display: inline-flex;
@@ -180,12 +181,12 @@ textarea {
 }
 .chip.overdue {
   color: var(--on-dark);
-  background: var(--raspberry-text);
+  background: var(--raspberry-fill);
 }
 .chip.upcoming,
 .chip.later {
   color: var(--on-dark);
-  background: var(--cerulean-text);
+  background: var(--cerulean-fill);
 }
 .chip.done {
   color: var(--ink-muted);

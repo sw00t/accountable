@@ -21,6 +21,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test-setup.ts"],
     css: false,
+    // Node's own localStorage (undefined without a storage file) would hide jsdom's.
+    execArgv: ["--no-experimental-webstorage"],
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],

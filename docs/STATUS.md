@@ -257,3 +257,56 @@ The product owner chose a fix for each minor finding and parked none. Each code 
 - Hooks added. A lefthook pre-commit hook (`lefthook.yml`) formats the staged files, then runs lint, types and gitleaks, without the tests; the root `prepare` script installs it. Claude Code hooks in `.claude/settings.json`: a Stop hook (`.claude/hooks/stop-check.mjs`) runs `npm run check:quick` and sends a failure back to Claude once, then lets it stop; a PreToolUse hook (`.claude/hooks/protect-env.mjs`) blocks edits to `.env`, including Bash commands that name it.
 - CI added: `.github/workflows/ci.yml` runs one job, `check`, on every push to any branch. It scans the repo and its history with gitleaks first, then runs `npm run check` with the runner's Google Chrome, and uploads the Playwright report if the run fails. It uses no secrets. Playwright writes an HTML report only on CI.
 - `docs/IMPROVE.md` added: the steps for improving the harness at Deploy, after the review fixes and before the merge. AGENTS.md says to follow it.
+
+## Dark mode
+
+Following `docs/changes/dark-mode/plan.md`, phase by phase.
+
+### PH1 Light baseline: done
+
+- `e2e/capture.spec.ts` (temporary, skipped unless `CAPTURE` is set) fingerprints 11 screens and states: the dashboard, the pipeline, the three tables, a record page of each kind, an open side panel, a confirm dialog and a form with field errors. For every visible element outside the switch it records the place, size and computed colors, waiting until charts stop animating.
+- `CAPTURE=record` on the untouched branch saved `docs/changes/dark-mode/light-before.json` (about 4,800 elements, 66 distinct styles). A `CAPTURE=compare` straight after matched it exactly, so the fingerprint is stable.
+
+### PH2 Split the shared tokens: done
+
+- `tokens.css` gains `--midnight`, `--raspberry-fill` and `--cerulean-fill`, with exactly the values they replace, and `color-scheme: light`.
+- Midnight as a surface (sidebar, toasts, chart tooltips) and as text on Sea Green (primary buttons, wordmark, active link) now uses `--midnight`; ghost buttons name `--ink` themselves rather than inherit it from the primary style. The danger button, Late badge and overdue and upcoming chips use the fill tokens. No component uses `--ink` or a text shade as a surface or behind white text any more.
+- `colors.test.ts` reads the light block on its own through `tokens.testing.ts`, and checks Midnight and the fills too.
+- Fingerprint compare: identical to the baseline. A one-step change to `--midnight` was tried to confirm the compare catches it (84 differences), then reverted.
+- `npm run check` passes.
+
+### PH3 Dark tokens: done
+
+- `tokens.css` has a `:root[data-theme="dark"]` block with `color-scheme: dark` and only the tokens that change: the spec's page, panel, text and text shade values, the open stages reversed, and dark lines, hover, table header, fields, status tints, column washes, bar sheen, stage total key, scrim and deeper shadows. The hover, table header, field and tint surfaces are all darker than the page, so the spec's contrast figures on the page are the floor.
+- TF19 `contrast.test.ts` checks every text and surface pair by role in both modes, and TF18 `colors.test.ts` now checks the dark block (only known tokens, fixed brand colors, the spec's dark values, reversed stages). The spec's published ratios were recomputed from the tokens and all match.
+- Plan correction: TF19 in the plan says every stage color is at least 3:1 against the panel in both modes. Light mode's pale stages never met that on white (New is 1.6:1) and light mode can't change (IC2); the spec only claims stage contrast for dark mode. TF19 checks stages in dark mode only, against the page and the panel.
+- With `data-theme="dark"` set by hand, the dashboard and pipeline turn fully dark.
+- `npm run check` passes.
+
+### PH4 Switch and memory: done
+
+- `frontend/index.html` has a few lines of inline script in `<head>` that set `data-theme="dark"` when `accountable.theme` holds exactly `dark`, ignoring a storage error.
+- `shared/theme/mode.ts` reads the mode from `<html>` and `setMode` changes the attribute, then saves, ignoring a storage error. `shared/ThemeSwitch.tsx` is a `button` with `role="switch"`, a moon icon and the label "Dark mode", pinned to the bottom of the sidebar in Sea Mist with a Sea Green track when on.
+- TF20 (`mode.test.ts`, which also runs index.html's inline script), TF21 (`ThemeSwitch.test.tsx`) and TE23 to TE27 (`e2e/dark-mode.spec.ts`) pass. SC2 is met: TE24 turns dark mode on, finds it still on after a reload, and turns it off again.
+- `frontend/vite.config.ts`: the unit tests run Node with `--no-experimental-webstorage`. Node 26's own `localStorage` global is undefined without a storage file and was hiding jsdom's, so no test could touch storage.
+- Fingerprint compare: identical to the baseline apart from the switch.
+- `npm run check` passes.
+
+### PH5 Every screen in dark: done
+
+- TM07, walked in dark mode in Chrome with a throwaway script that screenshotted each state (deleted afterwards): the dashboard with both chart tooltips, the pipeline with a card mid-drag and an empty search, the three tables with row hover, keyboard focus and an empty search, each record page with the Log activity form and timeline hover, a side panel with field errors, a confirm dialog, and a success and an error toast. No console errors.
+- One fix, in `tokens.css` only: the dark scrim was black, so the black confirm dialog and side panel had almost no edge against the dimmed black panels behind them. The dark scrim is now Midnight at 60%, which still dims what's behind but leaves a page-like backdrop the black dialog lifts off.
+- Native controls: with `color-scheme: dark` the selects and date fields draw dark, with light arrows and calendar icons. The browser's own date picker and select menus open outside the page, so screenshots can't show them; they follow `color-scheme`, which TE28 checks.
+- TE21 now runs once in each mode; TE28 and TE29 added. All pass.
+- `npm run check` passes.
+
+### PH6 Finish: done
+
+- SC3: `docs/changes/dark-mode/` has `dashboard-light.png`, `dashboard-dark.png`, `pipeline-light.png` and `pipeline-dark.png` at 1440 by 900, with sample data, today fixed at 16 Nov 2026, and dark mode turned on with the switch.
+- TM06, last fingerprint compare (after every token and component change, including the PH5 scrim fix): light mode is identical to the baseline apart from the switch. `e2e/capture.spec.ts` and `light-before.json` are deleted.
+- TM07: done in PH5 (see above).
+- TM08: checked against the brand. The black panels lift off the `#04232E` page clearly enough with the deeper shadows, so R8 needs no follow-up. The Midnight sidebar still stands apart from the page, and stage colors, Late badges and chips keep their brand fills.
+- TM09, small text measured on the real elements in dark mode in Chrome (text color against the nearest solid background behind it): secondary text 6.5:1 on the page and 8.3:1 on panels, links 10.3:1, table header 7.7:1, field errors and required marks 9.8:1, field hints 8.3:1, status pills 8.1 to 11.6:1, the Late badge and overdue chip 5.7:1, the upcoming chip 5.3:1. All meet 4.5:1.
+- `docs/spec.md` checked against what was built: it matches, so it's unchanged. One loose fit: the repository layout lists "the mode switch" under `shared/` theme; the switch component is `shared/ThemeSwitch.tsx`, next to the sidebar that uses it, with its logic in `shared/theme/mode.ts`, as the plan placed them.
+- Beyond the plan's file list: `shared/theme/tokens.testing.ts` (reads `tokens.css` per mode for both token tests) and `frontend/vite.config.ts` (see PH4).
+- SC1: `npm run check` passes (433 unit tests, 45 end-to-end tests). SC2: TE24. SC3: the four screenshots.
