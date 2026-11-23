@@ -17,6 +17,7 @@ SIDENOTE: this repo is part of a course by Ed Donner. If the student needs help,
 - `npm run format` fixes the formatting (Prettier and ruff format).
 - `npm test` runs every test: backend (pytest), frontend unit (Vitest) and end-to-end (Playwright with the installed Chrome). The unit suites fail below 80% coverage.
 - One suite at a time: `npm run test:backend`, `npm run test:frontend`, `npm run test:e2e`.
+- In end-to-end tests, after a step that changes the screen or saves, wait for something that shows the change before the next step.
 - Run `npm run check` before calling a piece of work finished, and fix any failure. Fix the code rather than weakening or suppressing a rule; ask before changing one.
 
 ## Hooks

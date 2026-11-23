@@ -319,6 +319,11 @@ The review against `docs/REVIEW.md` found nothing Important and three minor poin
 - `docs/spec.md`'s repository layout places the mode switch in `shared/` and saving the mode in `shared/theme/`, which closes the loose fit noted in PH6.
 - TE28 no longer relies on Recharts' internal class names, chart position or copied token values. It finds the revenue chart by its accessible name, resolves `--line` and `--ink-muted` in the browser before and after switching, and checks that every gridline and axis label takes the dark value. The side panel and confirm dialog are found by role.
 
+### CI fix
+
+- The first CI run of this branch failed TE06 (`e2e/deals.spec.ts`), which this change didn't touch. The test chose "All stages" and typed a search straight away. Each stage filter gets a fresh table, so on the slower runner the text went into the outgoing Won table and was lost, and the deal was never found. Locally the new table always rendered first.
+- TE06 now waits for the "N deals" summary before it types. It passed 10 runs in a row locally. No other end-to-end test types straight after changing a filter.
+
 ## Harness improvements
 
 ### After dark mode (22 Nov)
@@ -327,11 +332,11 @@ Followed `docs/IMPROVE.md`, looking at the dark mode review, the two MVP reviews
 
 - **Repeated: the plan and spec fell behind the build.** MVP: RV3 (built before the product owner's decision), RV4 and RV25 (spec out of date), RV26 (plan tests out of date). Dark mode: TF19 and the plan's file list were noted in STATUS only, and a spec mismatch was left as "a loose fit". `AGENTS.md` now has "Keeping the docs in step": update `plan.md` in the same phase, and ask before building anything the spec doesn't say. A check of changed files against the plan's file table was considered and left out: it would catch only the file list, not tests or rules.
 - **Repeated, suggested for `docs/STANDARDS.md`:** end-to-end tests that find elements by a library's class names or by position. TE28 did it (fixed in the review), and `e2e/dashboard.spec.ts` still does from the MVP (`.recharts-surface`, `.recharts-area-curve`, `.recharts-bar path`). Suggested wording: "In end-to-end tests, find elements by role, label or text, not by a library's class names or their position on the page." Not changed: that file is the product owner's to approve.
+- **Repeated, found after the first round: end-to-end tests that move on before the app has caught up.** RV14 reloaded before a move had saved, and TE06 typed before the new table appeared (see "CI fix" above). `AGENTS.md` now says to wait for something that shows the change before the next step. A tool can't tell a missing wait from a needed one, so it's a rule, not a check.
 - **Out of date:** the opening line of this file now says dark mode is built. Nothing in `AGENTS.md` or `docs/REVIEW.md` was out of date.
 - `docs/IMPROVE.md` now says where to find earlier mistakes and asks each round to record a watch list here.
 
 Watch list (seen once; a second time calls for a fix in the harness):
 
 - A test environment hiding a browser API: Node 26's own `localStorage` hid jsdom's until the unit tests ran with `--no-experimental-webstorage` (dark mode PH4).
-- An end-to-end test waiting for "network idle" instead of its own request, so it raced the save (RV14).
 - A fix tested only where the review found it, not across the same kind of code (MVP review, "Tests widened").

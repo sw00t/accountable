@@ -61,6 +61,8 @@ test("TE06 add, search, sort, edit and filter deals; late badge; the page shows 
 
   // The deal's page.
   await page.getByLabel("Filter by stage").selectOption("");
+  // Each stage filter gets a fresh table, so typing before it appears would land in the old one.
+  await expect(page.getByText(/^\d+ deals$/)).toBeVisible();
   await search.fill("data platform");
   await row.click();
   await expect(page.getByRole("heading", { level: 1, name: "Wilson data platform" })).toBeVisible();
