@@ -25,6 +25,8 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 | email, phone, job_title | text | optional |
 | organization_id | int | optional, `ON DELETE SET NULL` |
 | status | text | `lead`, `qualified` or `customer` |
+| search_name | text | the name in lower case, for search ([search.md](search.md#data-model)) |
+| created_by, updated_by | int | who added it and who last changed it, `ON DELETE SET NULL`, null for the sample data ([accounts.md](accounts.md#data-model)) |
 
 ### API
 
@@ -34,4 +36,4 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 | `POST /contacts`, `GET/PATCH/DELETE /contacts/{id}` | create, read, update, delete; read includes organization and deals |
 | `GET /contacts/{id}/delete-impact` | counts used by the confirm dialog |
 
-The contact's timeline endpoint is in [activities.md](activities.md#api).
+Reading a contact includes who added it and who last changed it (U10). The contact's timeline endpoint is in [activities.md](activities.md#api).

@@ -38,6 +38,8 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 | probability | int | 0 to 100 |
 | close_date | date | optional |
 | position | float | order within the stage's column, lower is higher up |
+| search_name | text | the name in lower case, for search ([search.md](search.md#data-model)) |
+| created_by, updated_by | int | who added it and who last changed it, `ON DELETE SET NULL`, null for the sample data ([accounts.md](accounts.md#data-model)) |
 
 How `position` is set is under Card order in [pipeline.md](pipeline.md#data-model).
 
@@ -58,4 +60,4 @@ How `position` is set is under Card order in [pipeline.md](pipeline.md#data-mode
 | `POST /deals`, `GET/PATCH/DELETE /deals/{id}` | create, read, update, delete; PATCH applies D3 to D6 |
 | `GET /deals/{id}/delete-impact` | counts used by the confirm dialog |
 
-Moving a deal on the board (`POST /deals/{id}/move`) is in [pipeline.md](pipeline.md#api), and the deal's timeline endpoint is in [activities.md](activities.md#api).
+Reading a deal includes who added it and who last changed it (U10). Moving a deal on the board (`POST /deals/{id}/move`) is in [pipeline.md](pipeline.md#api), and the deal's timeline endpoint is in [activities.md](activities.md#api).

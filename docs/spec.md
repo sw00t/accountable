@@ -8,7 +8,9 @@ A small business keeps track of its customers and sales in spreadsheets, inboxes
 
 ## Product
 
-Accountable is a business management system: a sales CRM that will grow into a full Business OS, including ERP. Today it's a complete sales CRM for one person, running on their own computer: a private Salesforce that does the everyday CRM essentials really well. It should feel sharp, modern and professional, and be a pleasure to use.
+Accountable is a business management system: a sales CRM that will grow into a full Business OS, including ERP. Today it's a complete sales CRM for a small team, shared on the web: a private Salesforce that does the everyday CRM essentials really well. It should feel sharp, modern and professional, and be a pleasure to use.
+
+Everyone signs in with their own email and password and works on the same data, and each record shows who added it. People are added by whoever runs Accountable for the team, in Supabase's dashboard; there's no sign-up page.
 
 It has five sections:
 
@@ -18,22 +20,24 @@ It has five sections:
 - **Deals**: the potential sales, with their stage, value and close date, and a timeline each.
 - **Pipeline**: the deals as cards on a board, one column per stage. Dragging a card changes its stage or its place, and dragging into Won or Lost closes the deal.
 
-Every page can be shown in dark mode, the default, or light mode. A switch at the bottom of the sidebar changes it, and the app remembers the choice.
+A top bar on every page has a search box that finds any organization, contact or deal by part of its name, and a menu under your initials with the theme and signing out. The theme is Dark (the default), Light or System, which follows the device's setting, and the browser remembers the choice.
 
 ### Users
 
-- One salesperson, using Accountable on their own computer every day. The rest of the sales team joins later.
-- The salesperson isn't technical: comfortable with web apps and spreadsheets, but not the terminal. Setup steps are written plainly, and error messages are clear and friendly.
-- No other systems are involved yet.
+- A small sales team sharing one Accountable on the web, each person signed in as themselves. Everyone can see and change everything.
+- The team isn't technical: comfortable with web apps and spreadsheets, but not the terminal. They open Accountable at its web address and install nothing. Setup steps are written plainly, and error messages are clear and friendly.
+- Whoever runs Accountable for the team adds people in Supabase's dashboard and deploys it to Render, following the steps in `docs/STATUS.md`.
+- Accountable keeps its data and its sign-in in Supabase and runs on Render. No other systems are involved.
 
 ### Goals
 
 Accountable is working when:
 
-- The salesperson stops keeping customer and sales data in spreadsheets or anywhere else.
+- The team stops keeping customer and sales data in spreadsheets or anywhere else.
 - The pipeline's value, a customer's last contact and today's follow-ups are each one click from the dashboard.
+- Any organization, contact or deal is one search away from any page.
 - Logging a call with a follow-up takes under 30 seconds.
-- The code is a clean base for adding the team, Supabase and ERP later.
+- The code is a clean base for adding roles, a full record of who did what, and ERP later.
 
 ## Areas
 
@@ -41,8 +45,10 @@ Each area file holds that area's concerns, requirements and design (data model, 
 
 | Area file | What it covers |
 | --- | --- |
-| [platform.md](specs/platform.md) | running the app, offline use, saving, migrations, money and dates, errors, sample data, architecture, repository layout, libraries, data model conventions and indexes, API conventions, testing |
-| [look-and-feel.md](specs/look-and-feel.md) | light and dark mode, the page layout, dark mode surfaces, page header, record pages, brand fonts, colors, stage colors, things to avoid, copy |
+| [platform.md](specs/platform.md) | running the app, offline use, saving, the two databases, migrations, money and dates, errors, sample data, running on the web and Render, settings, architecture, repository layout, libraries, data model conventions and indexes, API conventions, testing |
+| [accounts.md](specs/accounts.md) | signing in and out, local sign-in for development and tests, sessions, who added and last changed each record, the user menu; the `users` table, the token check and its endpoints; the sign-in screen and the menu |
+| [search.md](specs/search.md) | the top bar's search for organizations, contacts and deals; ignoring case on both databases; its endpoint and screen |
+| [look-and-feel.md](specs/look-and-feel.md) | light, dark and System themes, the page layout with its top bar, dark mode surfaces, page header, record pages, brand fonts, colors, stage colors, things to avoid, copy |
 | [tables-and-forms.md](specs/tables-and-forms.md) | what the organizations, contacts and deals tables share, the side-panel forms, validation |
 | [organizations.md](specs/organizations.md) | organizations: fields, table, record page, deleting; the `organizations` table and its endpoints |
 | [contacts.md](specs/contacts.md) | contacts: fields, table, status filter, record page, deleting; the `contacts` table and its endpoints |
@@ -58,7 +64,12 @@ Each requirement has an ID so tests, code and status notes can refer to it.
 | IDs | Requirements | Area file |
 | --- | --- | --- |
 | G1 to G12 | General | [platform.md](specs/platform.md#general) |
+| G13 to G16 | Running it on the web | [platform.md](specs/platform.md#running-it-on-the-web) |
 | S1 to S4 | Sample data | [platform.md](specs/platform.md#sample-data) |
+| U1 to U7 | Signing in | [accounts.md](specs/accounts.md#signing-in) |
+| U8 to U10 | Who added what | [accounts.md](specs/accounts.md#who-added-what) |
+| U11 to U12 | User menu | [accounts.md](specs/accounts.md#user-menu) |
+| F1 to F7 | Search | [search.md](specs/search.md#search) |
 | M1 to M5 | Light and dark mode | [look-and-feel.md](specs/look-and-feel.md#light-and-dark-mode) |
 | T1 to T7 | Tables (organizations, contacts and deals) | [tables-and-forms.md](specs/tables-and-forms.md#tables-organizations-contacts-and-deals) |
 | V1 to V5 | Validation | [tables-and-forms.md](specs/tables-and-forms.md#validation) |
@@ -79,7 +90,7 @@ Questions settled while the product was designed. They're numbered because requi
 | 2. Six pipeline stages, five brand colors. | [look-and-feel.md](specs/look-and-feel.md#concerns) |
 | 3. Two brand pairings fail contrast for small text. | [look-and-feel.md](specs/look-and-feel.md#concerns) |
 | 4. Offline use and Google Fonts. | [platform.md](specs/platform.md#concerns) |
-| 5. A non-technical user and a terminal command. | [platform.md](specs/platform.md#concerns) |
+| 5. A non-technical team and a terminal command. | [platform.md](specs/platform.md#concerns) |
 | 6. How much value reaches each stage. | [dashboard.md](specs/dashboard.md#concerns) |
 | 7. Won deals by month depends on an editable date. | [deals.md](specs/deals.md#concerns) |
 | 8. A deal activity's place on a contact's timeline is derived, not stored. | [activities.md](specs/activities.md#concerns) |
@@ -90,6 +101,14 @@ Questions settled while the product was designed. They're numbered because requi
 | 13. Text shades and fills split in dark mode. | [look-and-feel.md](specs/look-and-feel.md#concerns) |
 | 14. The stage scale on a dark background. | [look-and-feel.md](specs/look-and-feel.md#concerns) |
 | 15. Midnight does two jobs. | [look-and-feel.md](specs/look-and-feel.md#concerns) |
+| 16. Two ways to sign in. | [accounts.md](specs/accounts.md#concerns) |
+| 17. Where names come from. | [accounts.md](specs/accounts.md#concerns) |
+| 18. Records nobody signed in to add. | [accounts.md](specs/accounts.md#concerns) |
+| 19. A session that ends while someone is working. | [accounts.md](specs/accounts.md#concerns) |
+| 20. Ignoring case the same way on SQLite and Postgres. | [search.md](specs/search.md#concerns) |
+| 21. Supabase's Data API and the publishable key. | [platform.md](specs/platform.md#concerns) |
+| 22. Render's free plan sleeps. | [platform.md](specs/platform.md#concerns) |
+| 23. Reaching Supabase from Render. | [platform.md](specs/platform.md#concerns) |
 
 ### Design
 
@@ -97,17 +116,17 @@ Questions settled while the product was designed. They're numbered because requi
 | --- | --- |
 | Architecture | [platform.md](specs/platform.md#architecture); the dashboard's part in [dashboard.md](specs/dashboard.md#architecture), light and dark mode's in [look-and-feel.md](specs/look-and-feel.md#architecture) |
 | Repository layout, Libraries, Testing | [platform.md](specs/platform.md#repository-layout) |
-| Data model | conventions and indexes in [platform.md](specs/platform.md#data-model); each table in its area file |
-| API | conventions, errors, the `X-Local-Date` header and `GET /health` in [platform.md](specs/platform.md#api); each section's endpoints in its area file |
-| Screens | the shared layout, page header and record pages in [look-and-feel.md](specs/look-and-feel.md#screens); tables and forms in [tables-and-forms.md](specs/tables-and-forms.md#screens); the timeline, pipeline and dashboard in their area files |
+| Deployment | [platform.md](specs/platform.md#deployment) |
+| Data model | conventions and indexes in [platform.md](specs/platform.md#data-model); each table in its area file; who added and last changed each record in [accounts.md](specs/accounts.md#data-model) |
+| API | conventions, errors, the `Authorization` and `X-Local-Date` headers and `GET /health` in [platform.md](specs/platform.md#api); checking tokens in [accounts.md](specs/accounts.md#api); each section's endpoints in its area file |
+| Screens | the shared layout with its top bar, page header and record pages in [look-and-feel.md](specs/look-and-feel.md#screens); sign-in and the user menu in [accounts.md](specs/accounts.md#screens); the search box in [search.md](specs/search.md#screens); tables and forms in [tables-and-forms.md](specs/tables-and-forms.md#screens); the timeline, pipeline and dashboard in their area files |
 | Brand: fonts, Colors, Stage colors, things to avoid, copy | [look-and-feel.md](specs/look-and-feel.md#brand) |
 
 ## Not in Accountable yet
 
-Sign-in, user accounts and several users; a record of who did what; access from beyond the computer it runs on; following the computer's own dark mode setting; phone layouts; AI features; email, calendar and phone integrations; currencies other than US dollars; reports beyond the dashboard; tags and custom fields; changing the pipeline stages; and import or export.
+Roles and permissions; signing up in the app, resetting a password, and signing in with Google or a magic link; a full record of who did what (each record keeps only who added it and who last changed it, and stage changes don't record who made them); moving data from a local SQLite file to Supabase; phone layouts; AI features; email, calendar and phone integrations; currencies other than US dollars; reports beyond the dashboard; tags and custom fields; changing the pipeline stages; and import or export.
 
 ## Roadmap
 
-- **The team:** sign-in, several people sharing the same data, and a record of who did what.
-- **Beyond one computer:** making Accountable available to people elsewhere, not only on the computer it runs on.
+- **Roles and history:** roles and permissions, and a full record of who did what.
 - **ERP:** new sections such as invoices, each as its own backend module and frontend folder (see [Repository layout](specs/platform.md#repository-layout)).

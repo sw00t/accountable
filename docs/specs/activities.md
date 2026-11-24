@@ -34,6 +34,7 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 | deal_id | int | `ON DELETE CASCADE` |
 | follow_up_on | date | optional |
 | done | bool | false by default |
+| created_by, updated_by | int | who added it and who last changed it, `ON DELETE SET NULL`, null for the sample data ([accounts.md](accounts.md#data-model)) |
 
 A check constraint makes exactly one of `contact_id` and `deal_id` set.
 
@@ -45,6 +46,8 @@ A check constraint makes exactly one of `contact_id` and `deal_id` set.
 | `GET /deals/{id}/timeline` | the deal's activities and stage changes, newest first (D9) |
 | `POST /activities`, `PATCH/DELETE /activities/{id}` | create, edit, delete, mark done |
 
+Each activity on a timeline includes who added it (U10).
+
 ### Screens
 
-**Timeline.** A vertical list with a small icon per type (note, call, email, stage change), the description, the date, and for deal entries on a contact the deal name as a link. Follow-ups show a date chip: Raspberry when overdue, Cerulean when upcoming, grey with a check when done.
+**Timeline.** A vertical list with a small icon per type (note, call, email, stage change), the description, the date, who added it (for activities), and for deal entries on a contact the deal name as a link. Follow-ups show a date chip: Raspberry when overdue, Cerulean when upcoming, grey with a check when done.

@@ -23,6 +23,8 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 | website | text | optional, normalized to start with `https://` |
 | industry | text | optional, free text with suggestions from existing values |
 | notes | text | optional |
+| search_name | text | the name in lower case, for search ([search.md](search.md#data-model)) |
+| created_by, updated_by | int | who added it and who last changed it, `ON DELETE SET NULL`, null for the sample data ([accounts.md](accounts.md#data-model)) |
 
 ### API
 
@@ -31,3 +33,5 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 | `GET /organizations` | list with contact count, open deal count and open value |
 | `POST /organizations`, `GET/PATCH/DELETE /organizations/{id}` | create, read with contacts and deals, update, delete |
 | `GET /organizations/{id}/delete-impact` | counts used by the confirm dialog |
+
+Reading an organization includes who added it and who last changed it (U10).
