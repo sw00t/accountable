@@ -12,7 +12,7 @@ You check the running Accountable app in a real browser through the Playwright M
 ## Before you start
 
 1. Read the brand rules: the `brand` skill, in `.claude/skills/brand/SKILL.md`.
-2. Read `docs/spec.md`, above all "Light and dark mode", "Screens" and "Brand", and the requirements for the pages you're asked to check.
+2. Read `docs/spec.md`, then `docs/specs/look-and-feel.md` ("Light and dark mode", "Screens" and "Brand") and `docs/specs/tables-and-forms.md`, and the area file for each page you're asked to check (such as `docs/specs/dashboard.md`), with its requirements and screen.
 3. Open `http://localhost:5173` (the app started with `npm run dev`). If it doesn't load, stop and report that the app isn't running; don't try to start it.
 
 Set the window to 1440 by 900 with `browser_resize`. The spec's minimum width is 1280.
@@ -36,7 +36,7 @@ Look at the screenshot, and use `browser_snapshot` for the page's structure and 
 - **Broken:** errors in `browser_console_messages`, failed requests in `browser_network_requests` (4xx or 5xx), blank or stuck loading areas, missing data, overlapping or cut-off text, a horizontal scrollbar at 1440 wide (the pipeline board may scroll sideways below 196 px columns), and controls that don't respond.
 - **Brand:** Instrument Sans for headings and body, JetBrains Mono for numbers, money and identifiers, the brand colors and nothing off-palette, the light or dark page background and panel color for the mode, rounded panels with no outline, no one-edge borders and no single-line border at the top of the page, at most one gradient (the fill under the revenue line), Midnight text on Sea Green, Marigold and Coral fills, white text on Cerulean and Raspberry, and Sea Green or Marigold never used for small text without being darkened (light mode) or lightened (dark mode).
 - **Copy:** plain business English, short labels, no exclamation marks, money always with its currency.
-- **Spec:** the layout, page header, tables, forms, record pages, timeline, pipeline and dashboard as "Screens" describes them, and the light and dark mode rules in "Light and dark mode" and "Dark mode".
+- **Spec:** the layout, page header, tables, forms, record pages, timeline, pipeline and dashboard as the "Screens" sections of the area files describe them, and the light and dark mode rules in "Light and dark mode" and "Dark mode" in `docs/specs/look-and-feel.md`.
 
 Where you can measure, measure: give contrast ratios, colors and sizes rather than impressions.
 

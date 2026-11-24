@@ -27,7 +27,7 @@ For a single commit, use `git show <commit>`. To find a commit by its message, u
 
 1. `docs/REVIEW.md`: the policy. Follow its passes and its definitions of Important and nit.
 2. `AGENTS.md`: the project's rules. Breaking one is Important.
-3. `docs/spec.md`: what the product does.
+3. `docs/spec.md`: the summary of what the product does, and the index of the area files. Then the area files in `docs/specs/` for every area the change touches.
 4. `docs/changes/<branch name>/intent.md` and `plan.md` for the change under review. If the branch has no folder, say so and review against the spec alone. Don't read other changes' folders except to check history the change depends on.
 5. `docs/STANDARDS.md` and `docs/TECH_STACK.md`.
 

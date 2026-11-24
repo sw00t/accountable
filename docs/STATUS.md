@@ -355,6 +355,14 @@ Watch list (seen once; a second time calls for a fix in the harness):
 - Taken out because only the end-to-end tests needed them: the step that uploaded the Playwright report on failure, and the HTML report that `playwright.config.ts` wrote only on CI. The end-to-end tests now use the list reporter everywhere.
 - `AGENTS.md` describes the new CI step. The CI entry above, under the harness work, describes CI as it was then.
 
+## Spec split by area (24 Nov)
+
+- `docs/spec.md` is now a short summary of the whole product (problem, product, users, goals, not in Accountable yet, roadmap) with an index: which area file holds each requirement ID, each concern and each design section.
+- The detail moved, unchanged, to nine area files in `docs/specs/`: `platform.md`, `look-and-feel.md`, `tables-and-forms.md`, `organizations.md`, `contacts.md`, `deals.md`, `pipeline.md`, `activities.md` and `dashboard.md`. Each holds its area's concerns (keeping their numbers), requirements, and its part of the data model, API and screens.
+- Only wording that pointed at a neighbor changed: the API rows that said "as above" or had an empty purpose now say it in full, links between sections point at the right file, and each concern is labelled with its number.
+- `AGENTS.md` says to read `docs/spec.md` first, then only the area files the current change touches, and to keep every spec file a change affects up to date in the same change. `docs/REVIEW.md`'s two spec passes cover the area files and the index. `.claude/agents/reviewer.md` and `ui-check.md` point at the area files.
+- No code changed. The comment at the top of `frontend/src/shared/theme/tokens.css` still says "docs/spec.md, Colors"; the index in `docs/spec.md` leads to Colors in `docs/specs/look-and-feel.md`.
+
 ## Ideas for later
 
 - The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.
