@@ -340,3 +340,8 @@ Watch list (seen once; a second time calls for a fix in the harness):
 
 - A test environment hiding a browser API: Node 26's own `localStorage` hid jsdom's until the unit tests ran with `--no-experimental-webstorage` (dark mode PH4).
 - A fix tested only where the review found it, not across the same kind of code (MVP review, "Tests widened").
+
+## Ideas for later
+
+- The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.
+- The "Dark mode" switch takes more sidebar space than it needs; make it a small icon that toggles dark mode on and off.
