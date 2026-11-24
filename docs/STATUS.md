@@ -341,6 +341,14 @@ Watch list (seen once; a second time calls for a fix in the harness):
 - A test environment hiding a browser API: Node 26's own `localStorage` hid jsdom's until the unit tests ran with `--no-experimental-webstorage` (dark mode PH4).
 - A fix tested only where the review found it, not across the same kind of code (MVP review, "Tests widened").
 
+## Subagents (23 Nov)
+
+- `.claude/agents/reviewer.md`: reviews the changes on a branch (or a named commit or range) against `docs/REVIEW.md` and reports Important findings, at most five nits, and open questions. Tools: Read, Grep, Glob and Bash. Model: Sonnet. Its PreToolUse hook, `.claude/hooks/reviewer-read-only.mjs`, splits each Bash command at unquoted `;`, `&&`, `||`, `|` and `&`, and blocks it unless every part is a read-only command (git diff, log, show, grep, status, blame and similar; grep, cat, head, ls, find and similar). It also blocks writing to a file, command substitution, `find -delete` or `-exec`, `git branch` with anything but listing options, and environment-variable prefixes. Tried on 15 commands that read (all allowed) and 15 that write or run things (all blocked).
+- `.claude/agents/ui-check.md`: checks the running app at `http://localhost:5173` through the Playwright MCP server, 1440 by 900, every page in light and dark mode unless told otherwise. It preloads the brand skill, reads the spec, and reports Broken, Off-brand and Doesn't match the spec, with a screenshot per page and mode. Tools: Read, Grep, Glob and the Playwright browser tools, without file upload or running arbitrary Playwright code. No Bash, Edit or Write. Model: Sonnet. It doesn't save, delete or drag records.
+- `.mcp.json`: the Playwright server now runs with `--output-dir .playwright-mcp`. That covers only files the server names itself (snapshots, console logs); a screenshot given a file name is saved relative to the repo root.
+- `AGENTS.md` has a "Subagents" section describing both.
+- Tried on 23 Nov. reviewer reviewed `df6b07a` ("Deploy: harness improved"): no Important findings, three nits. ui-check checked the dashboard and pipeline in both modes: nothing off-brand, and the pipeline's Lost column starts off-screen at 1440 wide. Its four screenshots landed in the repo root because `ui-check.md` told it to pass a bare file name. A test after a restart showed the same result, so `ui-check.md` now tells it to put `.playwright-mcp/` in the file name, and `AGENTS.md` says why.
+
 ## Ideas for later
 
 - The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.

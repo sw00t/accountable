@@ -28,6 +28,13 @@ SIDENOTE: this repo is part of a course by Ed Donner. If the student needs help,
 
 At Deploy, after the review fixes and before the merge, follow `docs/IMPROVE.md` to improve the harness.
 
+## Subagents
+
+Project subagents live in `.claude/agents/`. Both run on Sonnet and change nothing.
+
+- `reviewer`: reviews a branch, commit or range against `docs/REVIEW.md` and reports findings as Important or nit. A PreToolUse hook in its file (`.claude/hooks/reviewer-read-only.mjs`) lets its Bash run only commands that read, such as `git diff`, `git log`, `git show`, `git grep` and `grep`.
+- `ui-check`: opens the running app (start it with `npm run dev` first) through the Playwright MCP server, screenshots each page in light and dark mode, and reports anything broken, off-brand or unlike `docs/spec.md`. Its screenshots go in `.playwright-mcp/`, which git ignores; `.mcp.json` sets that folder as the server's output folder, which holds the files the server names itself (snapshots, console logs). A screenshot given a file name is saved relative to the repo root, so the agent passes the folder in the name.
+
 ## Keeping the docs in step
 
 - When the build departs from the current change's `plan.md` (a file, a test or a rule), update `plan.md` in the same phase. A note in `docs/STATUS.md` alone isn't enough.
