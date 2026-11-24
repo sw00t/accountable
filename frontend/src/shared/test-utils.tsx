@@ -3,7 +3,8 @@ import { render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import App from "../App";
-import type { Schemas } from "./api";
+import { SessionProvider, type Person } from "../account/session";
+import { connectSession, type Schemas } from "./api";
 import { ToastProvider } from "./Toast";
 
 export function testClient() {
@@ -25,14 +26,45 @@ export function renderWithProviders(ui: ReactElement, client = testClient(), pat
   };
 }
 
-/** The whole app, with its sidebar and routes, opened at `path`. */
+export const TEST_TOKEN = "test-token";
+
+/**
+ * Signs in for the rest of the test, as the session gate would: every request carries
+ * `token`. `ended` records the session gate being told the session has ended.
+ */
+export function signIn(token = TEST_TOKEN) {
+  const ended = vi.fn();
+  onTestFinished(connectSession({ accessToken: async () => token, ended }));
+  return { ended };
+}
+
+export const TEST_PERSON: Person = { name: "Test User", email: "test@accountable.local" };
+
+/** `ui` with the app's providers, signed in as `person`. `signOut` records signing out. */
+export function renderSignedIn(
+  ui: ReactElement,
+  client = testClient(),
+  path = "/",
+  person = TEST_PERSON,
+) {
+  const signOut = vi.fn(async () => {});
+  const session = <SessionProvider value={{ person, signOut }}>{ui}</SessionProvider>;
+  return { ...signIn(), signOut, ...renderWithProviders(session, client, path) };
+}
+
+/** The whole app, with its sidebar and routes, opened at `path` and signed in. */
 export function renderApp(path: string, client = testClient()) {
-  return renderWithProviders(<App />, client, path);
+  return renderSignedIn(<App />, client, path);
 }
 
 // --- Records as the API returns them, with overrides for what a test cares about ---
 
-const STAMPS = { created_at: "2026-01-01T00:00:00", updated_at: "2026-01-01T00:00:00" };
+const STAMPS = {
+  created_at: "2026-01-01T00:00:00",
+  updated_at: "2026-01-01T00:00:00",
+  added_by: "Jane Smith",
+  changed_by: "Sam Lee",
+};
 
 export function dealRow(overrides: Partial<Schemas["DealRow"]> = {}): Schemas["DealRow"] {
   return {
@@ -102,6 +134,7 @@ export function timelineEntry(
     follow_up_on: null,
     follow_up_status: null,
     done: false,
+    added_by: "Jane Smith",
     ...overrides,
   };
 }

@@ -50,6 +50,8 @@ const { result } = concurrently(
       name: "backend",
       prefixColor: "cyan",
       command: `uv run uvicorn app.main:app --host 127.0.0.1 --port ${API_PORT} --reload --reload-dir backend/app`,
+      // The local SQLite file and Test User, never Supabase (G1, G14).
+      env: { ACCOUNTABLE_SIGN_IN: "local" },
     },
     { name: "frontend", prefixColor: "green", command: "npm run dev --workspace frontend" },
   ],

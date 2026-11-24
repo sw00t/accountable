@@ -1,4 +1,4 @@
-"""TB37 to TB39: sample data."""
+"""TB37 to TB39: sample data. Also who added it (Concern 18) and its search names (TB50, TB51)."""
 
 from datetime import date, timedelta
 from itertools import pairwise
@@ -7,9 +7,18 @@ import pytest
 from sqlalchemy import func, insert, select
 
 from app import config
-from app.db import activities, contacts, deals, engine_for, organizations, stage_changes
+from app.db import (
+    activities,
+    contacts,
+    deals,
+    engine_for,
+    insert_row,
+    organizations,
+    stage_changes,
+    users,
+)
 from app.main import start_database
-from app.rules import OPEN_STAGES, STAGES, STATUSES
+from app.rules import OPEN_STAGES, STAGES, STATUSES, search_key
 from app.seed import seed
 
 TODAY = date(2026, 11, 16)
@@ -183,7 +192,11 @@ def test_restart_keeps_existing_data(db_path):
 
 def test_reseed_replaces_everything(seeded):
     with seeded.begin() as conn:
-        conn.execute(insert(organizations).values(name="My own company"))
+        conn.execute(
+            insert(organizations).values(
+                name="My own company", search_name=search_key("My own company")
+            )
+        )
     seed(seeded, TODAY)
     with seeded.connect() as conn:
         assert count(conn, organizations) == 12
@@ -195,3 +208,28 @@ def test_tests_cannot_reseed_the_default_database():
     engine = engine_for(config.DEFAULT_DB)
     with pytest.raises(RuntimeError):
         seed(engine, TODAY)
+
+
+# Concern 18 and TB51: no one added the sample data, and every name has its search copy.
+def test_sample_records_have_search_names(seeded):
+    with seeded.connect() as conn:
+        for table in (organizations, contacts, deals):
+            rows = conn.execute(select(table.c.name, table.c.search_name)).all()
+            assert all(search_name == search_key(name) for name, search_name in rows)
+
+
+def test_no_one_is_recorded_on_sample_records(seeded):
+    with seeded.connect() as conn:
+        for table in (organizations, contacts, deals, activities):
+            credited = count(
+                conn, table, table.c.created_by.is_not(None) | table.c.updated_by.is_not(None)
+            )
+            assert credited == 0
+
+
+def test_reseed_keeps_people(seeded):
+    with seeded.begin() as conn:
+        insert_row(conn, users, auth_id="someone", email="jo@example.com", name="Jo")
+    seed(seeded, TODAY)
+    with seeded.connect() as conn:
+        assert conn.scalar(select(users.c.email)) == "jo@example.com"

@@ -1,6 +1,8 @@
 """Sample data (S1 to S4), generated relative to today with a fixed random seed.
 
 Run `npm run seed` (or `uv run python -m app.seed`) to delete everything and load it again.
+Nobody added the sample records, so they show "Sample data" (Concern 18).
+People in `users` are kept.
 """
 
 import random
@@ -23,7 +25,7 @@ from app.db import (
     organizations,
     stage_changes,
 )
-from app.rules import OPEN_STAGES, Stage, usual_probability
+from app.rules import OPEN_STAGES, Stage, search_key, usual_probability
 
 SEED = 2026
 
@@ -165,6 +167,7 @@ def _add_organizations(
             conn,
             organizations,
             name=name,
+            search_name=search_key(name),
             website=f"https://{domain}",
             industry=industry,
             notes=rng.choice(NOTES),
@@ -181,8 +184,10 @@ def _contact_row(
     first, last = fake.unique.first_name(), fake.last_name()
     domain = org.domain if org else "example.net"
     created = _at(year_ago + timedelta(days=rng.randint(0, 200)), rng)
+    name = f"{first} {last}"
     return {
-        "name": f"{first} {last}",
+        "name": name,
+        "search_name": search_key(name),
         "email": f"{first.lower()}.{last.lower()}@{domain}",
         "phone": fake.numerify("(###) 555-####"),
         "job_title": rng.choice(JOB_TITLES),
@@ -307,10 +312,12 @@ def _add_deals(
         probability = _probability(rng, stage)
         positions[stage] = positions.get(stage, 0.0) + 1.0
         created_at = _at(created_on, rng)
+        name = _deal_name(org, i)
         deal_id = insert_row(
             conn,
             deals,
-            name=_deal_name(org, i),
+            name=name,
+            search_name=search_key(name),
             organization_id=org.id,
             contact_id=contact_id,
             stage=stage,
@@ -411,24 +418,29 @@ def _add_activities(
         )
 
 
-def seed(engine: Engine, today: date, rng_seed: int = SEED) -> None:
-    """Delete all data and load the sample data, relative to `today`."""
-    path = Path(engine.url.database or "")
-    if config.testing() and config.is_default_db(path):
-        raise RuntimeError("Tests must not reseed the default database. Set ACCOUNTABLE_DB.")
-
+def load_sample_data(conn: Connection, today: date, rng_seed: int = SEED) -> None:
+    """Delete every record and load the sample data, relative to `today`, in the caller's
+    transaction. `users` is kept, so people keep their rows across a reseed."""
     rng = random.Random(rng_seed)
     fake = Faker("en_US")
     fake.seed_instance(rng_seed)
     year_ago = today - timedelta(days=364)
 
+    _clear(conn)
+    orgs = _add_organizations(conn, rng, fake, year_ago)
+    contact_ids, contacts_by_org = _add_contacts(conn, rng, fake, year_ago, orgs)
+    spans, won_contacts = _add_deals(conn, rng, today, year_ago, orgs, contacts_by_org)
+    _make_customers(conn, rng, contact_ids, won_contacts)
+    _add_activities(conn, rng, today, year_ago, contact_ids, spans)
+
+
+def seed(engine: Engine, today: date, rng_seed: int = SEED) -> None:
+    """Delete every record and load the sample data, relative to `today`."""
+    path = Path(engine.url.database or "")
+    if config.testing() and config.is_default_db(path):
+        raise RuntimeError("Tests must not reseed the default database. Set ACCOUNTABLE_DB.")
     with engine.begin() as conn:
-        _clear(conn)
-        orgs = _add_organizations(conn, rng, fake, year_ago)
-        contact_ids, contacts_by_org = _add_contacts(conn, rng, fake, year_ago, orgs)
-        spans, won_contacts = _add_deals(conn, rng, today, year_ago, orgs, contacts_by_org)
-        _make_customers(conn, rng, contact_ids, won_contacts)
-        _add_activities(conn, rng, today, year_ago, contact_ids, spans)
+        load_sample_data(conn, today, rng_seed)
 
 
 def main() -> None:

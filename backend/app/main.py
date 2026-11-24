@@ -1,18 +1,22 @@
-"""The FastAPI app: routers, error handlers and startup."""
+"""The FastAPI app: routers, error handlers, startup and serving the built frontend."""
 
 import json
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import config
-from app.db import engine_for, migrate
+from app.auth import SIGN_IN_MESSAGE
+from app.db import app_engine, migrate
+from app.deps import get_person
 from app.routers import (
+    account,
     activities,
     contacts,
     dashboard,
@@ -31,10 +35,12 @@ GENERAL_ERROR = (
 
 
 def start_database() -> None:
-    """Migrate, then fill a brand-new database with the sample data (G4, G12)."""
-    path = config.db_path()
-    is_new = not path.exists()
-    engine = engine_for(path)
+    """Check the settings, migrate (G12), then fill a brand-new SQLite file with the sample data (G4).
+    Postgres is never filled here: that's `npm run seed:supabase` (G15)."""
+    settings = config.settings()
+    settings.check()
+    is_new = settings.local and not config.db_path().exists()
+    engine = app_engine()
     migrate(engine)
     if is_new:
         from app.seed import seed
@@ -50,25 +56,35 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Accountable", version="0.1.0", lifespan=lifespan)
 
-# Only answer requests addressed to this computer, so a web page that points its
-# own domain name at 127.0.0.1 (DNS rebinding) can't read or change the data (RV10).
+# Only answer requests addressed to this computer or to the app's own address on Render,
+# so a web page that points its own domain name at the backend (DNS rebinding) can't read
+# or change the data (RV10, G6).
 # The Vite proxy sends Host 127.0.0.1; "testserver" is FastAPI's test client.
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"] + (["testserver"] if config.testing() else [])
+LOCAL_HOSTS = {"127.0.0.1", "localhost"}
 WRONG_HOST = "Accountable only answers requests made on this computer."
 
 
-class LocalHostsOnly:
+def allowed_hosts() -> set[str]:
+    """Read on each request, so the tests can name a Render host."""
+    render_host = config.settings().render_host
+    return (
+        LOCAL_HOSTS
+        | ({render_host} if render_host else set())
+        | ({"testserver"} if config.testing() else set())
+    )
+
+
+class KnownHostsOnly:
     """Like Starlette's TrustedHostMiddleware, but the refusal uses the API's usual
     error shape (spec: errors are {"message", "fields"})."""
 
-    def __init__(self, app, allowed_hosts: list[str]):
+    def __init__(self, app):
         self.app = app
-        self.allowed_hosts = set(allowed_hosts)
 
     async def __call__(self, scope, receive, send):
         if scope["type"] in ("http", "websocket"):
             host = Headers(scope=scope).get("host", "").split(":")[0]
-            if host not in self.allowed_hosts:
+            if host not in allowed_hosts():
                 if scope["type"] == "websocket":
                     await send({"type": "websocket.close", "code": 1008})
                 else:
@@ -80,11 +96,16 @@ class LocalHostsOnly:
         await self.app(scope, receive, send)
 
 
-app.add_middleware(LocalHostsOnly, allowed_hosts=ALLOWED_HOSTS)
+app.add_middleware(KnownHostsOnly)
 
 API = "/api"
-for module in (health, organizations, contacts, deals, activities, timeline, dashboard):
-    app.include_router(module.router, prefix=API)
+SIGNED_IN = [Depends(get_person)]
+app.include_router(health.router, prefix=API)
+app.include_router(account.router, prefix=API)
+if config.settings().local:
+    app.include_router(account.local_auth, prefix=API)
+for module in (organizations, contacts, deals, activities, timeline, dashboard):
+    app.include_router(module.router, prefix=API, dependencies=SIGNED_IN)
 
 if config.testing():
     from app.routers import testing
@@ -158,14 +179,40 @@ async def on_not_found(_request: Request, exc: NotFound) -> JSONResponse:
 
 
 @app.exception_handler(StarletteHTTPException)
-async def on_http_error(_request: Request, exc: StarletteHTTPException) -> JSONResponse:
-    if exc.status_code == 404:
+async def on_http_error(request: Request, exc: StarletteHTTPException) -> Response:
+    if exc.status_code == 404 and (page := frontend_file(request)):
+        return FileResponse(page)
+    if exc.status_code == 401:
+        message = SIGN_IN_MESSAGE
+    elif exc.status_code == 404:
         message = "We couldn't find that page in Accountable."
     elif exc.status_code == 405:
         message = "Accountable can't do that here."
     else:
         message = GENERAL_ERROR
-    return JSONResponse(status_code=exc.status_code, content={"message": message, "fields": {}})
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"message": message, "fields": {}},
+        headers=exc.headers,
+    )
+
+
+# --- The built frontend (G13) ----------------------------------------------
+
+
+def frontend_file(request: Request) -> Path | None:
+    """The built frontend's file for a request no route answered: the file at that path, or index.html.
+    index.html lets a link to a record open after a refresh.
+    None for /api paths, for other methods, and when the frontend isn't built (npm run dev)."""
+    path = request.url.path
+    if request.method not in ("GET", "HEAD") or path == API or path.startswith(API + "/"):
+        return None
+    dist = config.settings().frontend_dist.resolve()
+    file = (dist / path.lstrip("/")).resolve()
+    if file.is_file() and file.is_relative_to(dist):
+        return file
+    index = dist / "index.html"
+    return index if index.is_file() else None
 
 
 @app.exception_handler(Exception)

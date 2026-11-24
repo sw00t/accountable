@@ -7,10 +7,23 @@ export const WEB_PORT = 5273;
 export const TODAY = "2026-11-16";
 export const E2E_DB = "data/e2e.db";
 
+// They sign in with local sign-in, never Supabase (IC8). These settings are taken out of
+// the environment the servers start with, even when the shell running the tests has them.
+for (const name of [
+  "DATABASE_URL",
+  "SUPABASE_URL",
+  "SUPABASE_PUBLISHABLE_KEY",
+  "RENDER",
+  "RENDER_EXTERNAL_HOSTNAME",
+]) {
+  delete process.env[name];
+}
+
 const backendEnv = {
   ACCOUNTABLE_DB: E2E_DB,
   ACCOUNTABLE_TODAY: TODAY,
   ACCOUNTABLE_TESTING: "1",
+  ACCOUNTABLE_SIGN_IN: "local",
 };
 
 export default defineConfig({

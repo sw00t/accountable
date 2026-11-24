@@ -1,4 +1,5 @@
-// Talks to the backend: sends the user's today (G10) and turns every failure
+// Talks to the backend: sends the session's token (U5) and the user's today (G10),
+// hands a refused session to the session gate (U3), and turns every other failure
 // into a short, plain message (G8).
 import type { components } from "./api-types";
 import { localToday } from "./today";
@@ -22,6 +23,41 @@ export class ApiError extends Error {
   }
 }
 
+/** How the session gate and `api` talk: the gate supplies the token and hears when it's refused. */
+export type SessionLink = {
+  /** The current access token, renewed first if it's due, or null when signed out. */
+  accessToken: () => Promise<string | null>;
+  /** Called once, on the first 401, when the backend no longer accepts the session. */
+  ended: () => void;
+};
+
+let session: SessionLink | null = null;
+
+/** Connects the signed-in session to every request. Returns the function that disconnects it. */
+export function connectSession(link: SessionLink): () => void {
+  session = link;
+  return () => {
+    if (session === link) session = null;
+  };
+}
+
+async function authorization(): Promise<Record<string, string>> {
+  const token = await session?.accessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * A refused session is told to the gate once and the request never settles, so no
+ * screen raises a toast or an error for it (R12). The gate replaces the app with the
+ * sign-in screen and clears the cached queries, which drops these requests.
+ */
+function sessionEnded(): Promise<never> {
+  const ended = session;
+  session = null;
+  ended?.ended();
+  return new Promise<never>(() => {});
+}
+
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
 export async function api<T>(path: string, method: Method = "GET", body?: unknown): Promise<T> {
@@ -30,6 +66,7 @@ export async function api<T>(path: string, method: Method = "GET", body?: unknow
     response = await fetch(`/api${path}`, {
       method,
       headers: {
+        ...(await authorization()),
         "X-Local-Date": localToday(),
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       },
@@ -38,28 +75,24 @@ export async function api<T>(path: string, method: Method = "GET", body?: unknow
   } catch {
     throw new ApiError(NETWORK_MESSAGE);
   }
+  if (response.status === 401) return sessionEnded();
   if (response.status === 204) return undefined as T;
-  let data: unknown = null;
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
-  if (!response.ok) {
-    const payload = (data ?? {}) as { message?: unknown; fields?: unknown };
-    const message =
-      typeof payload.message === "string" && response.status < 500
-        ? payload.message
-        : GENERAL_MESSAGE;
-    const fields =
-      payload.fields && typeof payload.fields === "object"
-        ? (payload.fields as Record<string, string>)
-        : {};
-    // A reply that isn't ours (such as the dev proxy failing) means the backend isn't running.
-    const unreachable = data === null && response.status >= 500;
-    throw new ApiError(unreachable ? NETWORK_MESSAGE : message, response.status, fields);
-  }
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw failure(response.status, data);
   return data as T;
+}
+
+function failure(status: number, data: unknown): ApiError {
+  const payload = (data ?? {}) as { message?: unknown; fields?: unknown };
+  const message =
+    typeof payload.message === "string" && status < 500 ? payload.message : GENERAL_MESSAGE;
+  const fields =
+    payload.fields && typeof payload.fields === "object"
+      ? (payload.fields as Record<string, string>)
+      : {};
+  // A reply that isn't ours (such as the dev proxy failing) means the backend isn't running.
+  const unreachable = data === null && status >= 500;
+  return new ApiError(unreachable ? NETWORK_MESSAGE : message, status, fields);
 }
 
 /** "Couldn't save the deal. Accountable isn't answering..." for toasts. */

@@ -19,7 +19,7 @@ You need two free tools on your computer, installed once. After that, starting A
 
 1. Open a terminal in the Accountable folder, as in step 3.
 2. Type `npm run dev` and press Return.
-3. Your browser opens Accountable at http://localhost:5173 after a few seconds. The first start takes longer while it gets ready, and fills Accountable with sample data.
+3. Your browser opens Accountable at http://localhost:5173 after a few seconds. The first start takes longer while it gets ready, and fills Accountable with sample data. It opens on a sign-in screen with Test User already filled in: click **Sign in**. This test sign-in works only on your computer and never touches Supabase.
 4. Leave the terminal window open while you work. To stop Accountable, click the terminal window and press Ctrl+C, or just close it.
 
 Everything you change is saved straight away, in the file `data/accountable.db` inside the Accountable folder. To keep a backup, copy that file somewhere safe while Accountable is stopped.
@@ -34,6 +34,70 @@ Type `npm run seed` in the terminal. **This deletes everything you've entered** 
 - **"Accountable's packages aren't installed yet"**: type `npm install`, then `npm run dev`.
 - **A message says a port or address is already in use**: Accountable is probably already running in another terminal window. Use that one, or close it and start again.
 - **The browser says it can't connect**: check the terminal window is still open and showing no error, then refresh the page.
+
+## Running Accountable for your team, with Supabase
+
+`npm run dev` is for one person on one computer. For a team, Accountable keeps its data and its sign-in in Supabase and runs on Render. Each step below ends with a check, so a mistake shows up straight away rather than at the end. Run the check commands in a terminal in the Accountable folder. None of them prints a setting's value.
+
+### Set up Supabase (once)
+
+1. **Create the project.** At [supabase.com](https://supabase.com), sign in and click New project. Give it a name and a strong database password, and keep the password somewhere safe: it goes into `.env` in step 2. Note the region you choose, because the Render service should be in the same one.
+   *Check:* the project's home page loads and no longer says it is setting up.
+2. **Fill in `.env`.** In the Accountable folder, copy `.env.example` to a new file named `.env` and fill in its three settings:
+   - `DATABASE_URL`: click **Connect** at the top of the project, choose the **Session pooler** connection string, and put your database password in place of `[YOUR-PASSWORD]`.
+   - `SUPABASE_URL`: in Project Settings, under Data API, the project URL.
+   - `SUPABASE_PUBLISHABLE_KEY`: in Project Settings, under API Keys, the publishable key. Never use the secret key: it can read and change everything.
+
+   `.env` is never committed, so the password stays on your computer.
+   *Check:* this prints each name followed by "set", three times. A "MISSING" names the setting to fill in.
+
+   ```sh
+   node --env-file=.env -e 'for (const k of ["DATABASE_URL","SUPABASE_URL","SUPABASE_PUBLISHABLE_KEY"]) console.log(k, process.env[k] ? "set" : "MISSING")'
+   ```
+
+   Then this prints `connected`, which shows the database can be reached through the session pooler with your password:
+
+   ```sh
+   uv run --env-file .env python -c "import os, psycopg; psycopg.connect(os.environ['DATABASE_URL']).close(); print('connected')"
+   ```
+3. **Turn off sign-ups.** In Authentication, under Sign In / Providers, turn off **Allow new users to sign up**, then save. Otherwise anyone who has the publishable key (every browser that opens Accountable has it) could make themselves an account through Supabase's API.
+   *Check:* this prints `200 true`. The `200` shows the URL and key work, and `true` shows sign-ups are off.
+
+   ```sh
+   node --env-file=.env -e 'fetch(process.env.SUPABASE_URL+"/auth/v1/settings",{headers:{apikey:process.env.SUPABASE_PUBLISHABLE_KEY}}).then(r=>r.json().then(j=>console.log(r.status, j.disable_signup)))'
+   ```
+4. **Check the token signing key.** In Project Settings, under JWT Keys, the current key should be ES256 or RS256. If it's a legacy HS256 secret, rotate to an asymmetric key there. Accountable accepts only ES256 and RS256 tokens, so with HS256 nobody can sign in.
+   *Check:* this prints `[ 'ES256' ]` or `[ 'RS256' ]`. An empty list `[]` means the project still signs with the HS256 secret.
+
+   ```sh
+   node --env-file=.env -e 'fetch(process.env.SUPABASE_URL+"/auth/v1/.well-known/jwks.json").then(r=>r.json()).then(j=>console.log(j.keys.map(k=>k.alg)))'
+   ```
+5. **Add each person.** In Authentication, under Users, click Add user, then Create new user. Enter their email and a password, tick **Auto Confirm User**, and create them. The dashboard has no field for a display name, so set it in the SQL editor, with their name and email in place of the examples:
+
+   ```sql
+   update auth.users
+   set raw_user_meta_data = coalesce(raw_user_meta_data, '{}') || '{"display_name": "Their Name"}'
+   where email = 'their@email';
+   ```
+
+   Give each person their email and password yourself. There's no sign-up or password reset in Accountable.
+   *Check:* in the SQL editor, this lists each person's email with their name beside it:
+
+   ```sql
+   select email, raw_user_meta_data->>'display_name' from auth.users;
+   ```
+
+### Load the sample data (optional)
+
+`npm run seed:supabase`: to be written once TM13 is done.
+
+### Run the built app on this computer
+
+`npm run build` and `npm start`: to be written once TM10 is done.
+
+### Deploy to Render
+
+To be written in PH4, once the app is running on Render.
 
 ## For developers
 
@@ -367,6 +431,30 @@ Watch list (seen once; a second time calls for a fix in the harness):
 
 - `docs/spec.md` and the area files describe the product with this change. New area files: `docs/specs/accounts.md` and `docs/specs/search.md`. Concerns 16 to 23 are new.
 - `docs/changes/multi-user/plan.md` is written: 11 parts with one owner per file, four phases (sign-in and the database, search, user menu, Render and finish), 19 risks, and tests TB44 to TB56, TF22 to TF33, TE30 to TE37 (with TE23 to TE29 rewritten) and TM10 to TM19. It asks for three new dependencies: psycopg, PyJWT and `@supabase/auth-js`. No code yet.
+
+### PH1 Sign-in and the database: built, by-hand checks under way
+
+Built by a team of agents, one per part of the plan, each editing only its own files.
+
+- **Database and settings (PT1):** `config.py` reads every setting when the app starts, never at import, and the mode is Supabase unless `ACCOUNTABLE_SIGN_IN=local`. `db.py` adds `users`, `created_by` and `updated_by` on the four record tables, `search_name` on organizations, contacts and deals, their indexes, and a Postgres engine with a small pool and pre-ping. Migration 0002 fills `search_name` for existing rows and on Postgres turns on row level security for every table; `env.py` can also write the SQL with no database connection, which TB45 checks.
+- **Sign-in on the backend (PT2):** `auth.py` checks Supabase's ES256 or RS256 tokens against the project's published keys, or local tokens against a key made at start, and keeps each person's `users` row up to date, writing only when their email or name changed. `routers/account.py` has `/config`, `/me` and the local stand-in for Supabase Auth. Every test runs signed in as Test User, with a second person and a signed-out client for the tests that need them.
+- **Who added what (PT3):** every write except a delete records the person (U8), through the new `authorship.py`, and every name write sets `search_name`. Renumbering a pipeline column keeps the other deals' last change, so sample deals don't show today's date. Sample records have no one recorded and show "Sample data".
+- **Server (PT5):** `main.py` protects every route but `/health`, `/config` and local sign-in, refuses local sign-in on Render, never seeds Postgres, allows the Render host, and serves the built frontend. `npm start` (`scripts/start.mjs` with `settings.mjs`) can never run local sign-in, and `npm run seed:supabase` asks before replacing any data and never prints `DATABASE_URL`.
+- **Frontend (PT6, PT7, PT9):** the app sits inside a session gate that shows the sign-in screen at any address while signed out and opens the page asked for afterwards. A 401 ends the session once, with no toast, and clears the cached data. Record pages show "Added by" and "Last changed by" at the foot of the details panel, and each timeline activity shows who added it.
+- **End to end (PT10):** the tests sign in as Test User through the sign-in screen once per run; TE30 to TE34 are new.
+- **Departures from the plan,** all now in `plan.md`: `authorship.py` is a new file; `test_performance.py`, `test_positions.py`, `board.test.tsx`, `main.test.tsx`, `persistence.spec.ts` and `pipeline.spec.ts` changed for sign-in or the new required column; auth-js has no cross-tab lock, so two tabs rely on Supabase Auth's 10-second refresh-token reuse window, which the local stand-in copies (R5); TE34 checks today's real date, since the backend records its own clock.
+- **Spec gaps filled:** U8 and pipeline.md's card order say renumbering isn't a change; accounts.md places "Your session has ended" under the button in the usual text color; platform.md's layout lists `authorship.py`, `seed_supabase.py` and the new scripts.
+- **Spec changes the product owner decided:** G11 also allows the console's 400 for a wrong password, and the 401s and the 403 from signing out with the refused token when a session ends (TE32, TE33). U2's "Couldn't reach" message also covers `GET /config` failing, and Sign in tries again. The `users` table's name comes from the token's `display_name`, then `full_name`, then `name`. The user menu takes the name and email from the sign-in token, not `/me` (Concern 17).
+- **Tests:** `npm run check` passes in full: backend 450 passed, frontend 471 unit tests in 35 files, end-to-end 52 passed.
+
+Still open in PH1:
+
+- TM10 to TM13 against the real Supabase project, with `npm start` and `npm run seed:supabase`. The project is set up and the five steps of the guide above are done and checked; the results will be noted here. TM12's checks, for once the tables exist: a Data API request with the publishable key prints `[]`, and Supabase's Security Advisor (Database, Advisors) reports no table with row level security disabled.
+
+  ```sh
+  node --env-file=.env -e 'fetch(process.env.SUPABASE_URL+"/rest/v1/organizations?select=*",{headers:{apikey:process.env.SUPABASE_PUBLISHABLE_KEY}}).then(r=>r.text()).then(console.log)'
+  ```
+- `test_performance.py::test_full_size_within_budget` failed once while other agents were running tests, and passed on its own. Worth watching in TM18.
 
 ## Ideas for later
 

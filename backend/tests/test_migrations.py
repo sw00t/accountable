@@ -1,4 +1,4 @@
-"""TB42: migrations match db.py and keep data."""
+"""TB42: migrations match db.py and keep data. TB45: migration 0002."""
 
 from datetime import date
 
@@ -124,13 +124,14 @@ def test_a_failed_migration_still_turns_foreign_keys_back_on(engine):
     assert _pooled_foreign_keys(engine) == [1, 1, 1]
 
 
-def test_command_line_upgrade_keeps_data_and_foreign_keys(engine, db_path):
+def test_command_line_upgrade_keeps_data_and_foreign_keys(engine, db_path, monkeypatch):
     """`alembic upgrade head` from a terminal takes the other branch of env.py."""
     from alembic import command
     from alembic.config import Config
 
     from app.config import REPO_ROOT
 
+    monkeypatch.setenv("ACCOUNTABLE_SIGN_IN", "local")
     seed(engine, TODAY)
     tables = [organizations, contacts, deals, activities, stage_changes]
     with engine.connect() as conn:
@@ -140,3 +141,103 @@ def test_command_line_upgrade_keeps_data_and_foreign_keys(engine, db_path):
         after = {t.name: conn.scalar(select(func.count()).select_from(t)) for t in tables}
     assert after == before
     assert _pooled_foreign_keys(engine) == [1, 1, 1]
+
+
+# --- TB45: migration 0002, accounts and search ----------------------------------
+
+
+def _upgrade_to(engine, revision: str) -> None:
+    from alembic import command
+    from alembic.config import Config
+
+    from app.config import REPO_ROOT
+    from app.db import migration_connection
+
+    cfg = Config(str(REPO_ROOT / "alembic.ini"))
+    with migration_connection(engine) as conn:
+        cfg.attributes["connection"] = conn
+        command.upgrade(cfg, revision)
+
+
+def _add_0001_rows(engine) -> None:
+    """Rows as the first schema has them: no search_name, no one recorded."""
+    org = {"created_at": "2026-11-16 09:00:00", "updated_at": "2026-11-16 09:00:00"}
+    with engine.begin() as conn:
+        conn.exec_driver_sql(
+            "INSERT INTO organizations (id, name, created_at, updated_at) VALUES "
+            "(1, 'Élan Studio', :created_at, :updated_at), "
+            "(2, 'Große Straße GmbH', :created_at, :updated_at)",
+            org,
+        )
+        conn.exec_driver_sql(
+            "INSERT INTO contacts (id, name, status, organization_id, created_at, updated_at) "
+            "VALUES (1, 'ADA Park', 'lead', 1, :created_at, :updated_at)",
+            org,
+        )
+        conn.exec_driver_sql(
+            "INSERT INTO deals (id, name, organization_id, contact_id, stage, value, "
+            "probability, position, created_at, updated_at) VALUES "
+            "(1, 'Rebrand ΣΙΣΥΦΟΣ', 1, 1, 'new', 100, 10, 1.0, :created_at, :updated_at)",
+            org,
+        )
+        conn.exec_driver_sql(
+            "INSERT INTO activities (type, description, occurred_on, deal_id, done, created_at, "
+            "updated_at) VALUES ('call', 'Called', '2026-11-10', 1, 0, :created_at, :updated_at)",
+            org,
+        )
+
+
+def test_0002_upgrades_a_database_with_data(db_path):
+    from sqlalchemy import inspect
+
+    from app.db import engine_for, users
+
+    engine = engine_for(db_path.resolve())
+    _upgrade_to(engine, "0001")
+    _add_0001_rows(engine)
+    _upgrade_to(engine, "head")
+
+    with engine.connect() as conn:
+        search_names = {
+            t.name: dict(conn.execute(select(t.c.name, t.c.search_name)).all())
+            for t in (organizations, contacts, deals)
+        }
+        authors = [
+            conn.execute(select(t.c.created_by, t.c.updated_by)).all()
+            for t in (organizations, contacts, deals, activities)
+        ]
+        assert conn.scalar(select(func.count()).select_from(activities)) == 1
+        assert conn.scalar(select(func.count()).select_from(users)) == 0
+        assert conn.exec_driver_sql("PRAGMA foreign_keys").scalar() == 1
+        assert conn.scalar(select(contacts.c.organization_id)) == 1
+    assert search_names == {
+        "organizations": {
+            "Élan Studio": "élan studio",
+            "Große Straße GmbH": "grosse strasse gmbh",
+        },
+        "contacts": {"ADA Park": "ada park"},
+        "deals": {"Rebrand ΣΙΣΥΦΟΣ": "rebrand σισυφοσ"},
+    }
+    assert all(row == (None, None) for rows in authors for row in rows)
+    assert "users" in inspect(engine).get_table_names()
+
+
+def test_0002_as_postgres_sql_turns_on_row_level_security_for_every_table():
+    """CN21: with no policies, row level security shuts out Supabase's Data API."""
+    import io
+
+    from alembic import command
+    from alembic.config import Config
+
+    from app.config import REPO_ROOT
+
+    output = io.StringIO()
+    cfg = Config(str(REPO_ROOT / "alembic.ini"), output_buffer=output)
+    cfg.set_main_option("sqlalchemy.url", "postgresql+psycopg://")
+    command.upgrade(cfg, "0001:head", sql=True)
+    sql = output.getvalue()
+
+    tables = [*metadata.tables, "alembic_version"]
+    assert len(tables) == 7
+    for table in tables:
+        assert f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;" in sql

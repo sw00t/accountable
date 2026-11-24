@@ -1,4 +1,4 @@
-"""Business rules for deals and contacts (D3 to D7, A6). The frontend only shows their results."""
+"""Business rules (D3 to D7, A6, U9, Concern 20). The frontend only shows their results."""
 
 from datetime import date, timedelta
 from typing import Literal
@@ -99,3 +99,16 @@ def stage_change_text(from_stage: str | None, to_stage: str) -> str:
     if from_stage is None:
         return f"Added in {STAGE_LABELS[to_stage]}"
     return f"Moved from {STAGE_LABELS[from_stage]} to {STAGE_LABELS[to_stage]}"
+
+
+NO_ONE_RECORDED = "Sample data"
+
+
+def search_key(name: str) -> str:
+    """Concern 20: the search copy of a name, lower case as Python makes it on any database."""
+    return name.casefold()
+
+
+def shown_name(name: str | None, email: str | None) -> str:
+    """U9 and Concern 18: the display name, else the email, else "Sample data"."""
+    return name or email or NO_ONE_RECORDED

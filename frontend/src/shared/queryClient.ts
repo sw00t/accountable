@@ -17,6 +17,12 @@ export function useRefreshAll(): () => Promise<void> {
   return () => client.invalidateQueries();
 }
 
+/** Forgets every cached query, so nothing from one session shows in the next (U4). */
+export function useClearAll(): () => void {
+  const client = useQueryClient();
+  return () => client.clear();
+}
+
 /** Create (no id) or update (with id) a record, then refresh everything on screen. */
 export function useSaveRecord<T>(path: string) {
   const refreshAll = useRefreshAll();

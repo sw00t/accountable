@@ -1,20 +1,43 @@
-"""Per-request dependencies: a database connection and today's date."""
+"""Per-request dependencies: a database connection, the signed-in person and today's date."""
 
 from collections.abc import Iterator
 from datetime import date, datetime
 from typing import Annotated
 
 from fastapi import Depends, Header
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import Connection
 
-from app import config
-from app.db import engine_for
+from app import auth, config
+from app.db import app_engine
 
 
 def get_conn() -> Iterator[Connection]:
     """One connection per request. Write endpoints commit before they return."""
-    with engine_for(config.db_path()).connect() as conn:
+    with app_engine().connect() as conn:
         yield conn
+
+
+Conn = Annotated[Connection, Depends(get_conn)]
+
+bearer = HTTPBearer(auto_error=False)
+
+
+def get_claims(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+) -> auth.Claims:
+    """The token is checked before any database connection is opened."""
+    if credentials is None:
+        raise auth.NotSignedIn()
+    return auth.claims_from(credentials.credentials)
+
+
+def get_person(claims: Annotated[auth.Claims, Depends(get_claims)], conn: Conn) -> auth.User:
+    """U5: the person comes from the token alone, never from the request's body or query."""
+    return auth.person_for(conn, claims)
+
+
+Person = Annotated[auth.User, Depends(get_person)]
 
 
 # A browser's date is always well inside this range. Dates near the ends of the
@@ -41,5 +64,4 @@ def now_on(today: date) -> datetime:
     return datetime.combine(today, datetime.now().time())
 
 
-Conn = Annotated[Connection, Depends(get_conn)]
 Today = Annotated[date, Depends(get_today)]

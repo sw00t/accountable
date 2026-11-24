@@ -3,10 +3,11 @@
 from fastapi import APIRouter
 from sqlalchemy import Connection, delete, func, select, union_all, update
 
+from app import authorship
 from app.db import activities, contacts, count_rows, deals, insert_row, organizations
-from app.deps import Conn, Today
+from app.deps import Conn, Person, Today
 from app.routers.deals import deal_rows
-from app.rules import Status
+from app.rules import Status, search_key
 from app.schemas import (
     Contact,
     ContactCreate,
@@ -25,6 +26,7 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
+authors = authorship.Authors(contacts)
 
 
 def _last_activity():
@@ -52,11 +54,14 @@ def contact_rows(conn: Connection, *where, limit: int | None = None, offset: int
             contacts,
             organizations.c.name.label("organization_name"),
             last.c.last_activity_on,
+            *authors.columns(),
         )
         .select_from(
-            contacts.outerjoin(
-                organizations, organizations.c.id == contacts.c.organization_id
-            ).outerjoin(last, last.c.contact_id == contacts.c.id)
+            authors.join(
+                contacts.outerjoin(
+                    organizations, organizations.c.id == contacts.c.organization_id
+                ).outerjoin(last, last.c.contact_id == contacts.c.id)
+            )
         )
         .where(*where)
         .order_by(contacts.c.name, contacts.c.id)
@@ -64,14 +69,22 @@ def contact_rows(conn: Connection, *where, limit: int | None = None, offset: int
     )
     if limit:
         query = query.limit(limit)
-    return [dict(row) for row in conn.execute(query).mappings()]
+    return [authorship.with_names(dict(row)) for row in conn.execute(query).mappings()]
 
 
 def get_contact(conn: Connection, contact_id: int) -> dict:
-    row = conn.execute(select(contacts).where(contacts.c.id == contact_id)).mappings().first()
+    row = (
+        conn.execute(
+            select(contacts, *authors.columns())
+            .select_from(authors.join(contacts))
+            .where(contacts.c.id == contact_id)
+        )
+        .mappings()
+        .first()
+    )
     if row is None:
         raise NotFound("contact")
-    return dict(row)
+    return authorship.with_names(dict(row))
 
 
 def _check_organization(conn: Connection, organization_id: int | None) -> None:
@@ -110,9 +123,15 @@ def list_contacts(
 
 
 @router.post("", status_code=201)
-def create_contact(body: ContactCreate, conn: Conn) -> Contact:
+def create_contact(body: ContactCreate, conn: Conn, person: Person) -> Contact:
     _check_organization(conn, body.organization_id)
-    contact_id = insert_row(conn, contacts, **body.model_dump())
+    contact_id = insert_row(
+        conn,
+        contacts,
+        **body.model_dump(),
+        search_name=search_key(body.name),
+        **authorship.added(person),
+    )
     conn.commit()
     return Contact(**get_contact(conn, contact_id))
 
@@ -135,12 +154,20 @@ def read_contact(contact_id: RecordId, conn: Conn, today: Today) -> ContactDetai
 
 
 @router.patch("/{contact_id}")
-def update_contact(contact_id: RecordId, body: ContactUpdate, conn: Conn) -> Contact:
+def update_contact(
+    contact_id: RecordId, body: ContactUpdate, conn: Conn, person: Person
+) -> Contact:
     get_contact(conn, contact_id)
     values = body.model_dump(exclude_unset=True)
     _check_organization(conn, values.get("organization_id"))
+    if "name" in values:
+        values["search_name"] = search_key(values["name"])
     if values:
-        conn.execute(update(contacts).where(contacts.c.id == contact_id).values(**values))
+        conn.execute(
+            update(contacts)
+            .where(contacts.c.id == contact_id)
+            .values(**values, **authorship.changed(person))
+        )
         conn.commit()
     return Contact(**get_contact(conn, contact_id))
 

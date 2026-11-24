@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Authorship } from "../shared/Authorship";
 import { DeleteRecord, type Deletable } from "../shared/DeleteRecord";
 import { formatDate, money, plural } from "../shared/format";
 import { LateBadge } from "../shared/LateBadge";
@@ -74,6 +75,7 @@ export function OrganizationPage() {
             <dt>Notes</dt>
             <dd>{org.notes ?? <span className="muted">None</span>}</dd>
           </dl>
+          <Authorship record={org} />
         </section>
 
         <div className="record-side">

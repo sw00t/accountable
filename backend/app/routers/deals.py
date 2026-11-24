@@ -5,7 +5,8 @@ from datetime import date, datetime
 from fastapi import APIRouter
 from sqlalchemy import Connection, delete, func, insert, select, update
 
-from app import rules
+from app import authorship, rules
+from app.auth import User
 from app.db import (
     activities,
     contacts,
@@ -15,7 +16,7 @@ from app.db import (
     organizations,
     stage_changes,
 )
-from app.deps import Conn, Today, now_on
+from app.deps import Conn, Person, Today, now_on
 from app.rules import Stage
 from app.schemas import (
     MESSAGES,
@@ -33,6 +34,7 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/deals", tags=["deals"])
+authors = authorship.Authors(deals)
 
 # --- Card positions (P4, P7) -----------------------------------------------
 # Lower is higher up the column. A card dropped between two others takes the
@@ -59,7 +61,12 @@ def renumber_column(conn: Connection, stage: str, exclude_id: int | None = None)
     if exclude_id is not None:
         query = query.where(deals.c.id != exclude_id)
     for number, deal_id in enumerate(conn.scalars(query).all(), start=1):
-        conn.execute(update(deals).where(deals.c.id == deal_id).values(position=float(number)))
+        # Renumbering isn't a change anyone made to these deals (U8), so it keeps their last change.
+        conn.execute(
+            update(deals)
+            .where(deals.c.id == deal_id)
+            .values(position=float(number), updated_at=deals.c.updated_at)
+        )
 
 
 def _position_of(conn: Connection, deal_id: int | None) -> float | None:
@@ -108,10 +115,13 @@ def deal_rows(conn: Connection, today: date, *where, order_by=None) -> list[dict
             deals,
             organizations.c.name.label("organization_name"),
             contacts.c.name.label("contact_name"),
+            *authors.columns(),
         )
         .select_from(
-            deals.outerjoin(organizations, organizations.c.id == deals.c.organization_id).outerjoin(
-                contacts, contacts.c.id == deals.c.contact_id
+            authors.join(
+                deals.outerjoin(
+                    organizations, organizations.c.id == deals.c.organization_id
+                ).outerjoin(contacts, contacts.c.id == deals.c.contact_id)
             )
         )
         .where(*where)
@@ -119,7 +129,7 @@ def deal_rows(conn: Connection, today: date, *where, order_by=None) -> list[dict
     )
     rows = []
     for row in conn.execute(query).mappings():
-        item = dict(row)
+        item = authorship.with_names(dict(row))
         item["expected_revenue"] = rules.expected_revenue(item["value"], item["probability"])
         item["is_late"] = rules.is_late(item["stage"], item["close_date"], today)
         rows.append(item)
@@ -168,8 +178,9 @@ def _record_stage_change(
     )
 
 
-def _make_customer(conn: Connection, contact_id: int | None) -> None:
-    """D5: a win makes the main contact a customer, never lowering a status."""
+def _make_customer(conn: Connection, contact_id: int | None, person: User) -> None:
+    """D5: a win makes the main contact a customer, never lowering a status.
+    The contact's change is credited to whoever won the deal (U8)."""
     if contact_id is None:
         return
     current = conn.scalar(select(contacts.c.status).where(contacts.c.id == contact_id))
@@ -177,10 +188,16 @@ def _make_customer(conn: Connection, contact_id: int | None) -> None:
         return
     raised = rules.status_after_win(current)
     if raised != current:
-        conn.execute(update(contacts).where(contacts.c.id == contact_id).values(status=raised))
+        conn.execute(
+            update(contacts)
+            .where(contacts.c.id == contact_id)
+            .values(status=raised, **authorship.changed(person))
+        )
 
 
-def _apply_stage(conn: Connection, deal: dict, values: dict, sent: dict, today: date) -> dict:
+def _apply_stage(
+    conn: Connection, deal: dict, values: dict, sent: dict, today: date, person: User
+) -> dict:
     """D3 to D6 for a change of stage. `sent` is what the client asked for, which
     wins over the stage's defaults when it changed probability or close date itself."""
     new_stage = values.get("stage", deal["stage"])
@@ -194,7 +211,7 @@ def _apply_stage(conn: Connection, deal: dict, values: dict, sent: dict, today: 
     values["position"] = top_position(conn, new_stage, exclude_id=deal["id"])
     _record_stage_change(conn, deal["id"], deal["stage"], new_stage, today)
     if new_stage == "won":
-        _make_customer(conn, values.get("contact_id", deal["contact_id"]))
+        _make_customer(conn, values.get("contact_id", deal["contact_id"]), person)
     return values
 
 
@@ -215,7 +232,7 @@ def list_deals(
 
 
 @router.post("", status_code=201)
-def create_deal(body: DealCreate, conn: Conn, today: Today) -> DealRow:
+def create_deal(body: DealCreate, conn: Conn, today: Today, person: Person) -> DealRow:
     _check_links(conn, body.organization_id, body.contact_id)
     close_date = body.close_date
     if body.stage in rules.CLOSED_STAGES and close_date is None:
@@ -236,10 +253,12 @@ def create_deal(body: DealCreate, conn: Conn, today: Today) -> DealRow:
         probability=probability,
         close_date=close_date,
         position=top_position(conn, body.stage),
+        search_name=rules.search_key(body.name),
+        **authorship.added(person),
     )
     _record_stage_change(conn, deal_id, None, body.stage, today)
     if body.stage == "won":
-        _make_customer(conn, body.contact_id)
+        _make_customer(conn, body.contact_id, person)
     conn.commit()
     return DealRow(**get_deal(conn, deal_id, today))
 
@@ -250,7 +269,9 @@ def read_deal(deal_id: RecordId, conn: Conn, today: Today) -> DealRow:
 
 
 @router.patch("/{deal_id}")
-def update_deal(deal_id: RecordId, body: DealUpdate, conn: Conn, today: Today) -> DealRow:
+def update_deal(
+    deal_id: RecordId, body: DealUpdate, conn: Conn, today: Today, person: Person
+) -> DealRow:
     deal = get_deal(conn, deal_id, today)
     sent = body.model_dump(exclude_unset=True)
     # Concern 1: required, unless it's already empty because its organization was deleted.
@@ -261,7 +282,7 @@ def update_deal(deal_id: RecordId, body: DealUpdate, conn: Conn, today: Today) -
     ):
         raise FieldErrors({"organization_id": MESSAGES["organization_id"]})
     _check_links(conn, sent.get("organization_id"), sent.get("contact_id"))
-    values = _apply_stage(conn, deal, dict(sent), sent, today)
+    values = _apply_stage(conn, deal, dict(sent), sent, today, person)
     stage = values.get("stage", deal["stage"])
     close_date = values.get("close_date", deal["close_date"])
     # D4: a Won or Lost deal always has a close date, as on create (RV5).
@@ -269,14 +290,22 @@ def update_deal(deal_id: RecordId, body: DealUpdate, conn: Conn, today: Today) -
         close_date = values["close_date"] = today
     if error := rules.close_date_error(stage, close_date, today):
         raise FieldErrors({"close_date": error})
+    if "name" in values:
+        values["search_name"] = rules.search_key(values["name"])
     if values:
-        conn.execute(update(deals).where(deals.c.id == deal_id).values(**values))
+        conn.execute(
+            update(deals)
+            .where(deals.c.id == deal_id)
+            .values(**values, **authorship.changed(person))
+        )
     conn.commit()
     return DealRow(**get_deal(conn, deal_id, today))
 
 
 @router.post("/{deal_id}/move")
-def move_deal(deal_id: RecordId, body: DealMove, conn: Conn, today: Today) -> DealRow:
+def move_deal(
+    deal_id: RecordId, body: DealMove, conn: Conn, today: Today, person: Person
+) -> DealRow:
     """P3, P4: change stage and place in one transaction. `after_id` is the card
     it lands under and `before_id` the card it lands over."""
     deal = get_deal(conn, deal_id, today)
@@ -287,9 +316,11 @@ def move_deal(deal_id: RecordId, body: DealMove, conn: Conn, today: Today) -> De
         stage = conn.scalar(select(deals.c.stage).where(deals.c.id == neighbor))
         if neighbor == deal_id or stage != body.stage:
             raise FieldErrors({field: MESSAGES[field]})
-    values = _apply_stage(conn, deal, {"stage": body.stage}, {}, today)
+    values = _apply_stage(conn, deal, {"stage": body.stage}, {}, today, person)
     values["position"] = place_between(conn, body.stage, deal_id, body.after_id, body.before_id)
-    conn.execute(update(deals).where(deals.c.id == deal_id).values(**values))
+    conn.execute(
+        update(deals).where(deals.c.id == deal_id).values(**values, **authorship.changed(person))
+    )
     conn.commit()
     return DealRow(**get_deal(conn, deal_id, today))
 

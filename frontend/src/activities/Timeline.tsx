@@ -91,6 +91,7 @@ export function Timeline({ kind, id }: Props) {
                         Mark done
                       </button>
                     )}
+                    {entry.added_by && <span className="muted">Added by {entry.added_by}</span>}
                   </div>
                 </div>
                 <span className="when">{formatDate(entry.on)}</span>

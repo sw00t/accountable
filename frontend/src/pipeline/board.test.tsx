@@ -3,7 +3,7 @@ import { act, renderHook, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { DealRow } from "../deals/hooks";
-import { mockApi, testClient } from "../shared/test-utils";
+import { dealRow, mockApi, testClient } from "../shared/test-utils";
 import { ToastProvider } from "../shared/Toast";
 import {
   applyMove,
@@ -25,7 +25,7 @@ function deal(
   value: number,
   probability: number,
 ): DealRow {
-  return {
+  return dealRow({
     id,
     name: `Deal ${id}`,
     stage,
@@ -39,9 +39,7 @@ function deal(
     contact_name: null,
     close_date: "2026-10-01",
     is_late: stage !== "won" && stage !== "lost",
-    created_at: "2026-01-01T00:00:00",
-    updated_at: "2026-01-01T00:00:00",
-  };
+  });
 }
 
 const deals = [

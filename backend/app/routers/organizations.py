@@ -3,11 +3,12 @@
 from fastapi import APIRouter
 from sqlalchemy import Connection, delete, func, select, update
 
+from app import authorship
 from app.db import contacts, count_rows, deals, insert_row, organizations
-from app.deps import Conn, Today
+from app.deps import Conn, Person, Today
 from app.routers.contacts import contact_rows
 from app.routers.deals import deal_rows
-from app.rules import OPEN_STAGES
+from app.rules import OPEN_STAGES, search_key
 from app.schemas import (
     NotFound,
     Organization,
@@ -23,17 +24,22 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
+authors = authorship.Authors(organizations)
 
 
 def get_organization(conn: Connection, organization_id: int) -> dict:
     row = (
-        conn.execute(select(organizations).where(organizations.c.id == organization_id))
+        conn.execute(
+            select(organizations, *authors.columns())
+            .select_from(authors.join(organizations))
+            .where(organizations.c.id == organization_id)
+        )
         .mappings()
         .first()
     )
     if row is None:
         raise NotFound("organization")
-    return dict(row)
+    return authorship.with_names(dict(row))
 
 
 @router.get("")
@@ -63,25 +69,37 @@ def list_organizations(
             func.coalesce(contact_counts.c.contact_count, 0).label("contact_count"),
             func.coalesce(open_deals.c.open_deal_count, 0).label("open_deal_count"),
             func.coalesce(open_deals.c.open_value, 0).label("open_value"),
+            *authors.columns(),
         )
         .select_from(
-            organizations.outerjoin(
-                contact_counts, contact_counts.c.organization_id == organizations.c.id
-            ).outerjoin(open_deals, open_deals.c.organization_id == organizations.c.id)
+            authors.join(
+                organizations.outerjoin(
+                    contact_counts, contact_counts.c.organization_id == organizations.c.id
+                ).outerjoin(open_deals, open_deals.c.organization_id == organizations.c.id)
+            )
         )
         .order_by(organizations.c.name, organizations.c.id)
         .offset(offset)
     )
     if limit:
         query = query.limit(limit)
-    items = [OrganizationRow(**row) for row in conn.execute(query).mappings()]
+    items = [
+        OrganizationRow(**authorship.with_names(dict(row)))
+        for row in conn.execute(query).mappings()
+    ]
     total = count_rows(conn, organizations)
     return OrganizationList(items=items, total=total)
 
 
 @router.post("", status_code=201)
-def create_organization(body: OrganizationCreate, conn: Conn) -> Organization:
-    organization_id = insert_row(conn, organizations, **body.model_dump())
+def create_organization(body: OrganizationCreate, conn: Conn, person: Person) -> Organization:
+    organization_id = insert_row(
+        conn,
+        organizations,
+        **body.model_dump(),
+        search_name=search_key(body.name),
+        **authorship.added(person),
+    )
     conn.commit()
     return Organization(**get_organization(conn, organization_id))
 
@@ -98,13 +116,17 @@ def read_organization(organization_id: RecordId, conn: Conn, today: Today) -> Or
 
 @router.patch("/{organization_id}")
 def update_organization(
-    organization_id: RecordId, body: OrganizationUpdate, conn: Conn
+    organization_id: RecordId, body: OrganizationUpdate, conn: Conn, person: Person
 ) -> Organization:
     get_organization(conn, organization_id)
     values = body.model_dump(exclude_unset=True)
+    if "name" in values:
+        values["search_name"] = search_key(values["name"])
     if values:
         conn.execute(
-            update(organizations).where(organizations.c.id == organization_id).values(**values)
+            update(organizations)
+            .where(organizations.c.id == organization_id)
+            .values(**values, **authorship.changed(person))
         )
         conn.commit()
     return Organization(**get_organization(conn, organization_id))

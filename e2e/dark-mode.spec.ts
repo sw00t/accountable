@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import { test, expect } from "./fixtures";
+import { test, expect, signIn } from "./fixtures";
 
 // Every browser context starts with empty storage, so each test opens in light mode.
 const LIGHT_PAGE = "rgb(240, 244, 245)";
@@ -67,7 +67,9 @@ test("TE26 with storage blocked the app opens light, the switch works and nothin
     if (["error", "warning"].includes(message.type())) logged.push(message.text());
   });
 
+  // With nothing stored, the session can't be read either, so the app opens on the sign-in screen.
   await page.goto("/");
+  await signIn(page);
   await expect(darkSwitch(page)).not.toBeChecked();
   expect(await background(page, "body")).toBe(LIGHT_PAGE);
 

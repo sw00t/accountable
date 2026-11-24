@@ -21,7 +21,7 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 
 The deals table, with its `position` column, is in [deals.md](deals.md#data-model).
 
-**Card order.** Dropping a card between two others sets its `position` to the midpoint of theirs; at the top or bottom it's one less than the first or one more than the last. When two neighbors get closer than 0.000001 apart, the backend renumbers that column as 1, 2, 3 and so on in the same transaction.
+**Card order.** Dropping a card between two others sets its `position` to the midpoint of theirs; at the top or bottom it's one less than the first or one more than the last. When two neighbors get closer than 0.000001 apart, the backend renumbers that column as 1, 2, 3 and so on in the same transaction. Renumbering isn't a change anyone made to the other deals, so they keep who last changed them and when (U8 in [accounts.md](accounts.md#who-added-what)).
 
 ### API
 

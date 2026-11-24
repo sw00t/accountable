@@ -428,6 +428,17 @@ main {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+.authorship {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.authorship p {
+  margin: 0;
+}
+.authorship p + p {
+  margin-top: 2px;
+}
 .linked {
   list-style: none;
   margin: 0;

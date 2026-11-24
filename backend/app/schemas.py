@@ -246,6 +246,8 @@ class OrganizationUpdate(In):
 
 
 class Organization(BaseModel):
+    """added_by and changed_by are names to show (U9), on created_at and updated_at (U10)."""
+
     id: int
     name: str
     website: str | None
@@ -253,6 +255,8 @@ class Organization(BaseModel):
     notes: str | None
     created_at: datetime
     updated_at: datetime
+    added_by: str
+    changed_by: str
 
 
 class OrganizationRow(Organization):
@@ -303,6 +307,8 @@ class Contact(BaseModel):
     status: Status
     created_at: datetime
     updated_at: datetime
+    added_by: str
+    changed_by: str
 
 
 class ContactRow(Contact):
@@ -366,6 +372,8 @@ class Deal(BaseModel):
     is_late: bool
     created_at: datetime
     updated_at: datetime
+    added_by: str
+    changed_by: str
 
 
 class DealRow(Deal):
@@ -454,6 +462,8 @@ class TimelineEntry(BaseModel):
     to_stage: Stage | None = None
     contact_id: Id | None = None
     deal: Ref | None = None
+    # Who added an activity (U10). Stage changes don't record anyone.
+    added_by: str | None = None
 
 
 class Timeline(BaseModel):

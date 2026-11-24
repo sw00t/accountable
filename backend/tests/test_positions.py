@@ -4,16 +4,20 @@ from sqlalchemy import insert, select
 
 from app.db import deals, organizations
 from app.routers.deals import place_between, position_between, top_position
+from app.rules import search_key
 
 
 def make_column(conn, stage: str, count: int) -> list[int]:
-    org_id = conn.execute(insert(organizations).values(name="Org")).inserted_primary_key[0]
+    org_id = conn.execute(
+        insert(organizations).values(name="Org", search_name=search_key("Org"))
+    ).inserted_primary_key[0]
     ids = []
     for i in range(count):
         ids.append(
             conn.execute(
                 insert(deals).values(
                     name=f"D{i}",
+                    search_name=search_key(f"D{i}"),
                     organization_id=org_id,
                     stage=stage,
                     value=1,

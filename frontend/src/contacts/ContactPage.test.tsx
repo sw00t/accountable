@@ -22,8 +22,10 @@ function contact(overrides: Partial<Schemas["ContactDetail"]> = {}): Schemas["Co
     job_title: "Buyer",
     organization_id: 2,
     status: "lead",
-    created_at: "2026-01-01T00:00:00",
-    updated_at: "2026-01-01T00:00:00",
+    created_at: "2026-11-03T09:15:00",
+    updated_at: "2026-11-16T17:40:00",
+    added_by: "Jane Smith",
+    changed_by: "Sam Lee",
     organization: { id: 2, name: "Bolt Freight" },
     deals: [
       dealRow({ id: 5, name: "Fleet renewal", is_late: true }),
@@ -69,6 +71,13 @@ test("the details show the contact's status, organization and ways to reach them
     "mailto:ann@bolt.example",
   );
   expect(panel).toHaveTextContent("0113 496 0000");
+});
+
+test("the details end with who added the contact and who last changed it", async () => {
+  open(contact());
+  const panel = await details();
+  expect(within(panel).getByText("Added by Jane Smith on 3 Nov 2026")).toBeInTheDocument();
+  expect(within(panel).getByText("Last changed by Sam Lee on 16 Nov 2026")).toBeInTheDocument();
 });
 
 test("missing details read as None, and the summary falls back to Contact", async () => {

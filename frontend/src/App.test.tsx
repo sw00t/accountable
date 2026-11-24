@@ -1,4 +1,5 @@
 // The app's frame: the sidebar takes you to each section, and a bad link says so.
+// TF22: a refused session reaches the session gate once, with no toasts.
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { list, mockApi, organizationRow, renderApp } from "./shared/test-utils";
@@ -42,4 +43,18 @@ test("a link to nowhere says so and offers the way back", () => {
     screen.getByText(/It may have been deleted, or the link may be wrong/),
   ).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Go to the dashboard" })).toHaveAttribute("href", "/");
+});
+
+test("a refused session tells the gate once and raises no toast", async () => {
+  const refused = () => ({
+    status: 401,
+    body: { message: "Sign in to use Accountable.", fields: {} },
+  });
+  mockApi({ "GET /dashboard": refused, "GET /organizations": refused });
+  const { ended } = renderApp("/");
+  await vi.waitFor(() => expect(ended).toHaveBeenCalledTimes(1));
+  await userEvent.click(screen.getByRole("link", { name: "Organizations" }));
+  expect(await screen.findByRole("heading", { name: "Organizations" })).toBeInTheDocument();
+  expect(ended).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
 });

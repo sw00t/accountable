@@ -5,9 +5,9 @@ from datetime import date
 from fastapi import APIRouter
 from sqlalchemy import Connection, delete, select, update
 
-from app import rules
+from app import authorship, rules
 from app.db import activities, contacts, deals, insert_row
-from app.deps import Conn, Today
+from app.deps import Conn, Person, Today
 from app.schemas import (
     MESSAGES,
     Activity,
@@ -41,7 +41,7 @@ def _check_done(follow_up_on: date | None, done: bool) -> None:
 
 
 @router.post("", status_code=201)
-def create_activity(body: ActivityCreate, conn: Conn, today: Today) -> Activity:
+def create_activity(body: ActivityCreate, conn: Conn, today: Today, person: Person) -> Activity:
     # A2: exactly one contact or one deal.
     if (body.contact_id is None) == (body.deal_id is None):
         raise FieldErrors({"contact_id": "Log the activity on one contact or one deal."})
@@ -54,15 +54,16 @@ def create_activity(body: ActivityCreate, conn: Conn, today: Today) -> Activity:
     ):
         raise FieldErrors({"deal_id": "That deal no longer exists."})
     _check_done(body.follow_up_on, body.done)
-    activity_id = insert_row(conn, activities, **body.model_dump())
+    activity_id = insert_row(conn, activities, **body.model_dump(), **authorship.added(person))
     conn.commit()
     return activity_out(get_activity(conn, activity_id), today)
 
 
 @router.patch("/{activity_id}")
 def update_activity(
-    activity_id: RecordId, body: ActivityUpdate, conn: Conn, today: Today
+    activity_id: RecordId, body: ActivityUpdate, conn: Conn, today: Today, person: Person
 ) -> Activity:
+    """Editing an activity, including marking its follow-up done, credits the person (U8)."""
     current = get_activity(conn, activity_id)
     values = body.model_dump(exclude_unset=True)
     follow_up_on = values.get("follow_up_on", current["follow_up_on"])
@@ -70,7 +71,11 @@ def update_activity(
         values["done"] = False  # removing the follow-up clears done
     _check_done(follow_up_on, values.get("done", current["done"]))
     if values:
-        conn.execute(update(activities).where(activities.c.id == activity_id).values(**values))
+        conn.execute(
+            update(activities)
+            .where(activities.c.id == activity_id)
+            .values(**values, **authorship.changed(person))
+        )
         conn.commit()
     return activity_out(get_activity(conn, activity_id), today)
 

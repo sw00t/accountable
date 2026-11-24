@@ -1,0 +1,49 @@
+/* Sign-in screen (accounts spec, Screens): one panel centered on the page, no sidebar. */
+.sign-in {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+}
+.sign-in-panel {
+  width: 400px;
+  padding: 32px;
+}
+.sign-in-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 24px;
+}
+.sign-in-panel h1 {
+  margin-bottom: 20px;
+}
+/* Marigold is bright in both modes, so Midnight text keeps its contrast on it. */
+.sign-in-local {
+  background: var(--marigold);
+  color: var(--midnight);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.sign-in-submit {
+  width: 100%;
+  justify-content: center;
+  padding: 11px 14px;
+}
+.sign-in-message {
+  margin: 14px 0 0;
+  font-size: 13px;
+}
+.sign-in-message.error {
+  color: var(--raspberry-text);
+}
+.sign-in-help {
+  margin: 20px 0 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}

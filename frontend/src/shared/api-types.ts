@@ -18,6 +18,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Config
+         * @description Needs no sign-in: the frontend reads it to know where to sign in.
+         */
+        get: operations["get_config_api_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["me_api_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/organizations": {
         parameters: {
             query?: never;
@@ -241,7 +278,10 @@ export interface paths {
         delete: operations["delete_activity_api_activities__activity_id__delete"];
         options?: never;
         head?: never;
-        /** Update Activity */
+        /**
+         * Update Activity
+         * @description Editing an activity, including marking its follow-up done, credits the person (U8).
+         */
         patch: operations["update_activity_api_activities__activity_id__patch"];
         trace?: never;
     };
@@ -411,6 +451,10 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Added By */
+            added_by: string;
+            /** Changed By */
+            changed_by: string;
         };
         /** ContactCreate */
         ContactCreate: {
@@ -460,6 +504,10 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Added By */
+            added_by: string;
+            /** Changed By */
+            changed_by: string;
             organization: components["schemas"]["Ref"] | null;
             /** Deals */
             deals: components["schemas"]["DealRow"][];
@@ -510,6 +558,10 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Added By */
+            added_by: string;
+            /** Changed By */
+            changed_by: string;
             /** Organization Name */
             organization_name: string | null;
             /** Last Activity On */
@@ -638,6 +690,10 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Added By */
+            added_by: string;
+            /** Changed By */
+            changed_by: string;
             /** Organization Name */
             organization_name: string | null;
             /** Contact Name */
@@ -728,6 +784,15 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** Me */
+        Me: {
+            /** Name */
+            name: string | null;
+            /** Email */
+            email: string;
+            /** Shown Name */
+            shown_name: string;
+        };
         /** MonthFigure */
         MonthFigure: {
             /** Month */
@@ -739,7 +804,10 @@ export interface components {
             /** Lost Count */
             lost_count: number;
         };
-        /** Organization */
+        /**
+         * Organization
+         * @description added_by and changed_by are names to show (U9), on created_at and updated_at (U10).
+         */
         Organization: {
             /** Id */
             id: number;
@@ -761,6 +829,10 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Added By */
+            added_by: string;
+            /** Changed By */
+            changed_by: string;
         };
         /** OrganizationCreate */
         OrganizationCreate: {
@@ -795,6 +867,10 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Added By */
+            added_by: string;
+            /** Changed By */
+            changed_by: string;
             /** Contacts */
             contacts: components["schemas"]["ContactRow"][];
             /** Deals */
@@ -838,6 +914,10 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Added By */
+            added_by: string;
+            /** Changed By */
+            changed_by: string;
             /** Contact Count */
             contact_count: number;
             /** Open Deal Count */
@@ -888,6 +968,18 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+        };
+        /** SignInConfig */
+        SignInConfig: {
+            /**
+             * Sign In
+             * @enum {string}
+             */
+            sign_in: "local" | "supabase";
+            /** Supabase Url */
+            supabase_url: string | null;
+            /** Supabase Publishable Key */
+            supabase_publishable_key: string | null;
         };
         /** StageFigure */
         StageFigure: {
@@ -962,6 +1054,8 @@ export interface components {
             /** Contact Id */
             contact_id?: number | null;
             deal?: components["schemas"]["Ref"] | null;
+            /** Added By */
+            added_by?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1001,6 +1095,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    get_config_api_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInConfig"];
+                };
+            };
+        };
+    };
+    me_api_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
                 };
             };
         };

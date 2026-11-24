@@ -5,7 +5,7 @@ from datetime import date
 from fastapi import APIRouter
 from sqlalchemy import Connection, or_, select
 
-from app import rules
+from app import authorship, rules
 from app.db import activities, deals, stage_changes
 from app.deps import Conn, Today
 from app.routers.contacts import get_contact
@@ -13,6 +13,7 @@ from app.routers.deals import get_deal
 from app.schemas import RecordId, Ref, Timeline, TimelineEntry
 
 router = APIRouter(tags=["timeline"])
+authors = authorship.Authors(activities)
 
 
 def _entries(
@@ -47,7 +48,13 @@ def _entries(
         return Ref(id=id_, name=names[id_]) if id_ is not None and contact_id is not None else None
 
     items: list[TimelineEntry] = []
-    for row in conn.execute(select(activities).where(activity_where)).mappings():
+    activity_query = (
+        select(activities, *authors.columns())
+        .select_from(authors.join(activities))
+        .where(activity_where)
+    )
+    for found in conn.execute(activity_query).mappings():
+        row = authorship.with_names(dict(found))
         items.append(
             TimelineEntry(
                 kind="activity",
@@ -63,6 +70,7 @@ def _entries(
                 follow_up_status=rules.follow_up_status(row["follow_up_on"], row["done"], today),
                 contact_id=row["contact_id"],
                 deal=deal_ref(row["deal_id"]),
+                added_by=row["added_by"],
             )
         )
     for row in conn.execute(select(stage_changes).where(change_where)).mappings():

@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, SIGNED_OUT, signIn, signInScreen } from "./fixtures";
 
 // The fixture fails any test with a console error (G11). This one walks every
 // page and opens every panel and dialog, so nothing is missed between the other tests,
@@ -51,3 +51,20 @@ for (const mode of ["light", "dark"]) {
     await expect(page.getByRole("switch", { name: "Dark mode" })).toBeChecked({ checked: mode === "dark" });
   });
 }
+
+// The sign-in screen, signed out, in each mode, through to the app.
+test.describe("signed out", () => {
+  test.use(SIGNED_OUT);
+  for (const mode of ["light", "dark"]) {
+    test(`TE21 the sign-in screen runs with no console errors in ${mode} mode`, async ({ page }) => {
+      if (mode === "dark") await page.addInitScript(() => localStorage.setItem("accountable.theme", "dark"));
+      await page.goto("/contacts");
+      await expect(signInScreen(page)).toBeVisible();
+      if (mode === "dark") await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+      else await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+      await signIn(page);
+      await expect(page.getByRole("heading", { level: 1, name: "Contacts" })).toBeVisible();
+      await expect(page.getByRole("switch", { name: "Dark mode" })).toBeChecked({ checked: mode === "dark" });
+    });
+  }
+});

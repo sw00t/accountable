@@ -84,6 +84,9 @@ test("TE11 a card dropped above or below cards, in its own or another column, st
 test("TE12 column and board totals change the moment a card drops", async ({ page }) => {
   await page.goto("/pipeline");
   const boardValue = page.getByTestId("board-value");
+  // Read the totals only once the deals have loaded, after sign-in's own requests.
+  await expect(card(page, "Heath training package")).toBeVisible();
+  await expect(boardValue).toHaveText(/^\$[1-9][\d,]*$/);
   const before = money(await boardValue.textContent());
   const negotiationBefore = money(await column(page, "Negotiation").getByTestId("column-value").textContent());
   const wonBefore = money(await column(page, "Won").getByTestId("column-value").textContent());

@@ -1,5 +1,5 @@
 import { execSync, spawn } from "node:child_process";
-import { test, expect, TODAY } from "./fixtures";
+import { test, expect, TEST_USER, TODAY } from "./fixtures";
 import { E2E_DB } from "../playwright.config";
 
 const RESTART_PORT = 8101;
@@ -19,7 +19,7 @@ async function waitFor(url: string) {
 
 test("TE09 changes survive a refresh and a backend restart; npm run seed restores the sample data", async ({ page }) => {
   test.setTimeout(90_000);
-  const env = { ...process.env, ACCOUNTABLE_DB: E2E_DB, ACCOUNTABLE_TODAY: TODAY };
+  const env = { ...process.env, ACCOUNTABLE_DB: E2E_DB, ACCOUNTABLE_TODAY: TODAY, ACCOUNTABLE_SIGN_IN: "local" };
 
   await page.goto("/organizations");
   await page.getByRole("button", { name: "Add organization" }).first().click();
@@ -33,8 +33,18 @@ test("TE09 changes survive a refresh and a backend restart; npm run seed restore
   // A freshly started backend on the same database still has it.
   const backend = spawn("uv", ["run", "uvicorn", "app.main:app", "--port", String(RESTART_PORT)], { env, stdio: "ignore" });
   try {
-    await waitFor(`http://127.0.0.1:${RESTART_PORT}/api/health`);
-    const list = await (await fetch(`http://127.0.0.1:${RESTART_PORT}/api/organizations`)).json();
+    const restarted = `http://127.0.0.1:${RESTART_PORT}/api`;
+    await waitFor(`${restarted}/health`);
+    // Each backend signs with its own key, so sign in on this one.
+    const signedIn = await fetch(`${restarted}/local-auth/token?grant_type=password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: TEST_USER.email, password: TEST_USER.password }),
+    });
+    expect(signedIn.ok).toBeTruthy();
+    const { access_token } = await signedIn.json();
+    const organizations = await fetch(`${restarted}/organizations`, { headers: { Authorization: `Bearer ${access_token}` } });
+    const list = await organizations.json();
     expect(list.items.map((o: { name: string }) => o.name)).toContain("Kept Over Restart Ltd");
   } finally {
     backend.kill();

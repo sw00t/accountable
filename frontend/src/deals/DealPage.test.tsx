@@ -50,6 +50,20 @@ test("the details show the deal's figures and link to its organization and conta
   expect(await screen.findByText(/Nothing logged yet/)).toBeInTheDocument();
 });
 
+test("the details end with who added the deal and who last changed it", async () => {
+  open(dealRow({ created_at: "2026-11-03T09:15:00", updated_at: "2026-11-16T17:40:00" }));
+  const panel = await details();
+  expect(within(panel).getByText("Added by Jane Smith on 3 Nov 2026")).toBeInTheDocument();
+  expect(within(panel).getByText("Last changed by Sam Lee on 16 Nov 2026")).toBeInTheDocument();
+});
+
+test("a sample deal shows Sample data as who added and changed it", async () => {
+  open(dealRow({ added_by: "Sample data", changed_by: "Sample data" }));
+  const panel = await details();
+  expect(within(panel).getByText("Added by Sample data on 1 Jan 2026")).toBeInTheDocument();
+  expect(within(panel).getByText("Last changed by Sample data on 1 Jan 2026")).toBeInTheDocument();
+});
+
 test("a closed deal with nothing linked says what's missing", async () => {
   open(
     dealRow({

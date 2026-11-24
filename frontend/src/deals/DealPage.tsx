@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Pencil, Trash2 } from "lucide-react";
 import { Timeline } from "../activities/Timeline";
+import { Authorship } from "../shared/Authorship";
 import { DeleteRecord, type Deletable } from "../shared/DeleteRecord";
 import { formatDate, money } from "../shared/format";
 import { LateBadge } from "../shared/LateBadge";
@@ -101,6 +102,7 @@ export function DealPage() {
           {deal.organization_id === null && (
             <p className="prompt">This deal has no organization. Edit it to choose one.</p>
           )}
+          <Authorship record={deal} />
         </section>
         <Timeline kind="deal" id={deal.id} />
       </div>

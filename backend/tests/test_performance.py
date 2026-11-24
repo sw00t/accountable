@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from sqlalchemy import insert
 
 from app.db import activities, contacts, deals, organizations, stage_changes
-from app.rules import STAGES, usual_probability
+from app.rules import STAGES, search_key, usual_probability
 
 TODAY = date(2026, 11, 16)
 BUDGET_MS = 200
@@ -16,12 +16,16 @@ BUDGET_MS = 200
 def fill(engine):
     rng = random.Random(1)
     with engine.begin() as conn:
-        conn.execute(insert(organizations), [{"name": f"Org {i}"} for i in range(300)])
+        conn.execute(
+            insert(organizations),
+            [{"name": f"Org {i}", "search_name": search_key(f"Org {i}")} for i in range(300)],
+        )
         conn.execute(
             insert(contacts),
             [
                 {
                     "name": f"Contact {i}",
+                    "search_name": search_key(f"Contact {i}"),
                     "status": rng.choice(["lead", "qualified", "customer"]),
                     "organization_id": rng.randint(1, 300),
                 }
@@ -34,6 +38,7 @@ def fill(engine):
             deal_rows.append(
                 {
                     "name": f"Deal {i}",
+                    "search_name": search_key(f"Deal {i}"),
                     "organization_id": rng.randint(1, 300),
                     "contact_id": rng.randint(1, 2000),
                     "stage": stage,

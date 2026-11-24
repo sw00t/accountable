@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Timeline } from "../activities/Timeline";
+import { Authorship } from "../shared/Authorship";
 import { DeleteRecord, type Deletable } from "../shared/DeleteRecord";
 import { formatDate, money } from "../shared/format";
 import { LateBadge } from "../shared/LateBadge";
@@ -89,6 +90,7 @@ export function ContactPage() {
               <dt>Phone</dt>
               <dd className="mono">{contact.phone ?? <span className="muted">None</span>}</dd>
             </dl>
+            <Authorship record={contact} />
           </section>
           <section className="panel" aria-label="Deals">
             <div className="panel-head">

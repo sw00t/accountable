@@ -21,6 +21,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test-setup.ts"],
     css: false,
+    // A slow unit test fails here before it slows CI down; CI's machine gets more room (IC14).
+    testTimeout: process.env.CI ? 10_000 : 1_000,
     // Node's own localStorage (undefined without a storage file) would hide jsdom's.
     execArgv: ["--no-experimental-webstorage"],
     coverage: {

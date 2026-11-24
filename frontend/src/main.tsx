@@ -6,6 +6,7 @@ import "./shared/theme/fonts";
 import "./shared/theme/global.css";
 import "./shared/theme/components.css";
 import App from "./App";
+import { SessionGate } from "./account/SessionGate";
 import { makeQueryClient } from "./shared/queryClient";
 import { ToastProvider } from "./shared/Toast";
 
@@ -14,7 +15,9 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={makeQueryClient()}>
       <BrowserRouter>
         <ToastProvider>
-          <App />
+          <SessionGate>
+            <App />
+          </SessionGate>
         </ToastProvider>
       </BrowserRouter>
     </QueryClientProvider>

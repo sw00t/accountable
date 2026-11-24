@@ -25,7 +25,7 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 - **G8** Error messages are short, plain and say what to do next, for example "Couldn't save the deal. Check your connection to Accountable and try again." No stack traces or codes are shown to the user. When a form's list of choices, such as its organizations, doesn't load, the form says so under that field with a Retry button and keeps what was typed.
 - **G9** Money is in US dollars, shown as `$48,200` in tables and cards and `$1.2M` only where space is short, such as chart axes. Amounts are whole dollars.
 - **G10** Dates are shown as `16 Nov 2026`. The app uses the computer's local date for "today".
-- **G11** No errors appear in the browser console during normal use. Two exceptions: opening a link to a record that has been deleted logs the server's 404 reply, while the page says the record can't be found; and a request refused because the session ended logs the server's 401 reply, while the sign-in screen shows (U3).
+- **G11** No errors appear in the browser console during normal use. Three exceptions, each where the page itself says what happened: opening a link to a record that has been deleted logs the server's 404 reply, while the page says the record can't be found; a wrong email or password logs the sign-in's 400 reply, while the sign-in screen shows U2's message; and when the session ends, the refused requests log their 401 replies and signing out with the refused token logs a 403, while the sign-in screen shows (U3).
 - **G12** Each time it starts, the backend applies any new database migrations, keeping all existing data. The same migrations run on SQLite and on Postgres.
 
 ### Running it on the web
@@ -80,12 +80,16 @@ alembic.ini               migration settings
 render.yaml               the Render web service
 .env.example              the names of the three settings, with no values
 scripts/dev.mjs           starts both servers, explains a missing tool, opens the browser
+scripts/start.mjs         npm start: checks the settings, then runs the built app with Supabase
+scripts/seed-supabase.mjs npm run seed:supabase: checks the settings, then runs seed_supabase.py
+scripts/settings.mjs      reads .env for those two and names any missing setting
 backend/
   app/
     main.py               FastAPI app, routers, error handlers, startup, serving the built frontend
     config.py             settings from environment variables
     deps.py               per-request dependencies: database connection, today's date, the person
     auth.py               checking tokens and keeping the users table up to date
+    authorship.py         who added and last changed a record: the values to save, the names to show
     db.py                 engine, metadata, tables
     schemas.py            Pydantic request and response models
     rules.py              stage probabilities and deal rules
@@ -93,7 +97,8 @@ backend/
                           organizations, contacts, deals (with board positions), activities,
                           timeline, dashboard, search, account (config, me, local sign-in),
                           health
-    seed.py               sample data generator, and loading it into Supabase after asking
+    seed.py               sample data generator
+    seed_supabase.py      loading the sample data into Supabase after asking (G15)
   migrations/             Alembic migrations, starting with the first schema
   tests/                  pytest
 frontend/

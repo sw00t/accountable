@@ -22,8 +22,10 @@ function organization(
     website: "https://bolt.example",
     industry: "Logistics",
     notes: "Prefers email.",
-    created_at: "2026-01-01T00:00:00",
-    updated_at: "2026-01-01T00:00:00",
+    created_at: "2026-11-03T09:15:00",
+    updated_at: "2026-11-16T17:40:00",
+    added_by: "Jane Smith",
+    changed_by: "Sam Lee",
     contacts: [contactRow(), contactRow({ id: 8, name: "Cy Dale", job_title: null, email: null })],
     deals: [
       dealRow({ is_late: true }),
@@ -58,6 +60,13 @@ test("the details show the website, industry, open pipeline and notes", async ()
     "https://bolt.example",
   );
   expect(panel).toHaveTextContent("IndustryLogisticsOpen pipeline$10,000NotesPrefers email.");
+});
+
+test("the details end with who added the organization and who last changed it", async () => {
+  open(organization());
+  const panel = await details();
+  expect(within(panel).getByText("Added by Jane Smith on 3 Nov 2026")).toBeInTheDocument();
+  expect(within(panel).getByText("Last changed by Sam Lee on 16 Nov 2026")).toBeInTheDocument();
 });
 
 test("missing details read as None", async () => {

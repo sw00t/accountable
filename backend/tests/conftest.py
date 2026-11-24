@@ -1,11 +1,22 @@
 """Shared fixtures. Every test gets its own database file, so tests never touch
-data/accountable.db (R13), and today is fixed (R4)."""
+data/accountable.db (R13), and today is fixed (R4).
+Tests use local sign-in and never reach Supabase (Concern 16): `client` is signed in as Test User.
+"""
 
 import os
 from datetime import date
 
 os.environ["ACCOUNTABLE_TESTING"] = "1"
 os.environ["ACCOUNTABLE_TODAY"] = "2026-11-16"
+os.environ["ACCOUNTABLE_SIGN_IN"] = "local"
+for name in (
+    "DATABASE_URL",
+    "SUPABASE_URL",
+    "SUPABASE_PUBLISHABLE_KEY",
+    "RENDER",
+    "RENDER_EXTERNAL_HOSTNAME",
+):
+    os.environ.pop(name, None)
 os.environ.setdefault(
     "ACCOUNTABLE_DB",
     os.path.join(os.path.dirname(__file__), "..", "..", "data", "pytest-unused.db"),
@@ -14,10 +25,34 @@ os.environ.setdefault(
 import pytest
 from fastapi.testclient import TestClient
 
+from app.auth import TEST_USER, Claims, local_signing_key, local_token
 from app.db import engine_for, migrate
 from app.main import app
 
 TODAY = date(2026, 11, 16)
+SECOND_PERSON = Claims(auth_id="local-second-person", email="sam@accountable.local", name="Sam Lee")
+# IC14: CI's machine is much slower, so the limit applies only on this computer.
+TIME_LIMIT_SECONDS = 1.0
+
+
+def pytest_sessionstart(session):
+    """One local signing key for the whole run: making one per test would slow every test (R10)."""
+    local_signing_key()
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item, call):
+    report = yield
+    if call.when == "setup":
+        item.setup_seconds = report.duration
+    elif call.when == "call" and report.passed and not os.environ.get("CI"):
+        seconds = getattr(item, "setup_seconds", 0.0) + report.duration
+        if seconds >= TIME_LIMIT_SECONDS:
+            report.outcome = "failed"
+            report.longrepr = (
+                f"Took {seconds:.2f}s with its setup. Unit tests must take under a second (IC14)."
+            )
+    return report
 
 
 @pytest.fixture
@@ -58,8 +93,33 @@ def activity_exists(engine):
     return check
 
 
+def signed_in(claims: Claims) -> TestClient:
+    return TestClient(
+        app,
+        raise_server_exceptions=False,
+        headers={"Authorization": f"Bearer {local_token(claims)}"},
+    )
+
+
 @pytest.fixture
 def client(engine):
+    """Signed in as Test User."""
+    return signed_in(TEST_USER)
+
+
+@pytest.fixture
+def second_person() -> Claims:
+    return SECOND_PERSON
+
+
+@pytest.fixture
+def second_client(engine):
+    """Signed in as second_person, Sam Lee."""
+    return signed_in(SECOND_PERSON)
+
+
+@pytest.fixture
+def signed_out_client(engine):
     return TestClient(app, raise_server_exceptions=False)
 
 

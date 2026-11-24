@@ -28,6 +28,7 @@ const move = timelineEntry({
   type: null,
   from_stage: "new",
   to_stage: "proposal",
+  added_by: null,
 });
 const items = { items: [call, email, move] };
 
@@ -50,6 +51,14 @@ test("each entry shows what happened, when, and its follow-up", async () => {
   expect(within(second).queryByRole("button", { name: "Mark done" })).not.toBeInTheDocument();
   expect(third).toHaveTextContent("Stage changeMoved from New to Proposal");
   expect(within(third).queryByRole("button")).not.toBeInTheDocument();
+});
+
+test("each activity shows who added it, and a stage change shows no one", async () => {
+  show("contact");
+  const [first, second, third] = within(await timeline()).getAllByRole("listitem");
+  expect(within(first).getByText("Added by Jane Smith")).toBeInTheDocument();
+  expect(within(second).getByText("Added by Jane Smith")).toBeInTheDocument();
+  expect(third).not.toHaveTextContent("Added by");
 });
 
 test("on a contact, an entry links to its deal", async () => {

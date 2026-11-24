@@ -1,4 +1,4 @@
-"""Engine, tables, constraint and indexes.
+"""Engines, tables, constraint and indexes.
 
 Every schema change also needs an Alembic migration in backend/migrations/versions.
 """
@@ -33,6 +33,8 @@ from sqlalchemy import (
     select,
 )
 
+from app import config
+
 metadata = MetaData()
 
 
@@ -49,6 +51,30 @@ def _timestamps() -> list[Column]:
     ]
 
 
+def _authorship() -> list[Column]:
+    """Who added the record and who last changed it (U8); empty for the sample data."""
+    return [
+        Column(name, Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
+        for name in ("created_by", "updated_by")
+    ]
+
+
+def _search_name() -> Column:
+    """The name as rules.search_key makes it, for search that ignores case (Concern 20).
+    Required, so a write path that forgets it fails (R14)."""
+    return Column("search_name", String, nullable=False, index=True)
+
+
+users = Table(
+    "users",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("auth_id", String, nullable=False, unique=True, index=True),
+    Column("email", String, nullable=False),
+    Column("name", String),
+    *_timestamps(),
+)
+
 organizations = Table(
     "organizations",
     metadata,
@@ -57,6 +83,8 @@ organizations = Table(
     Column("website", String),
     Column("industry", String),
     Column("notes", Text),
+    _search_name(),
+    *_authorship(),
     *_timestamps(),
 )
 
@@ -75,6 +103,8 @@ contacts = Table(
         index=True,
     ),
     Column("status", String, nullable=False, default="lead"),
+    _search_name(),
+    *_authorship(),
     *_timestamps(),
 )
 
@@ -100,6 +130,8 @@ deals = Table(
     Column("probability", Integer, nullable=False),
     Column("close_date", Date),
     Column("position", Float, nullable=False, default=1.0),
+    _search_name(),
+    *_authorship(),
     *_timestamps(),
     Index("ix_deals_stage_position", "stage", "position"),
 )
@@ -115,6 +147,7 @@ activities = Table(
     Column("deal_id", Integer, ForeignKey("deals.id", ondelete="CASCADE"), index=True),
     Column("follow_up_on", Date),
     Column("done", Boolean, nullable=False, default=False),
+    *_authorship(),
     *_timestamps(),
     CheckConstraint("(contact_id IS NULL) <> (deal_id IS NULL)", name="ck_activities_one_parent"),
     Index("ix_activities_follow_up", "follow_up_on", "done"),
@@ -171,6 +204,39 @@ def engine_for(path: Path) -> Engine:
     return make_engine(path)
 
 
+def make_postgres_engine(url: str) -> Engine:
+    """Supabase's session pooler allows few connections, so the pool is small (Concern 23).
+    Pre-ping replaces connections the pooler closed while Render's service slept (R9).
+    hide_parameters keeps the values in a failed query out of the logs."""
+    return create_engine(
+        url,
+        pool_size=3,
+        max_overflow=2,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        hide_parameters=True,
+    )
+
+
+@cache
+def postgres_engine_for(url: str) -> Engine:
+    return make_postgres_engine(url)
+
+
+def app_engine() -> Engine:
+    """The database the sign-in mode chooses: the SQLite file for local sign-in,
+    Postgres at DATABASE_URL for Supabase. Nothing in a request can switch them."""
+    settings = config.settings()
+    if settings.local:
+        return engine_for(config.db_path())
+    if settings.database_url is None:
+        raise config.SettingsError(
+            "Accountable can't reach its database without DATABASE_URL. "
+            "Add it to the settings on this computer or on Render."
+        )
+    return postgres_engine_for(settings.database_url)
+
+
 @contextmanager
 def foreign_keys_off(engine: Engine) -> Generator[Connection]:
     """A connection with foreign keys off, for migrations (RV6).
@@ -198,14 +264,23 @@ def foreign_keys_off(engine: Engine) -> Generator[Connection]:
             conn.commit()
 
 
+@contextmanager
+def migration_connection(engine: Engine) -> Generator[Connection]:
+    """A connection to migrate with: on SQLite with foreign keys off, on Postgres as it comes."""
+    if engine.dialect.name == "sqlite":
+        with foreign_keys_off(engine) as conn:
+            yield conn
+    else:
+        with engine.connect() as conn:
+            yield conn
+
+
 def migrate(engine: Engine) -> None:
     """Apply any new Alembic migrations, keeping existing data (G12)."""
     from alembic import command
     from alembic.config import Config
 
-    from app.config import REPO_ROOT
-
-    cfg = Config(str(REPO_ROOT / "alembic.ini"))
-    with foreign_keys_off(engine) as conn:
+    cfg = Config(str(config.REPO_ROOT / "alembic.ini"))
+    with migration_connection(engine) as conn:
         cfg.attributes["connection"] = conn
         command.upgrade(cfg, "head")
