@@ -24,7 +24,7 @@ SIDENOTE: this repo is part of a course by Ed Donner. If the student needs help,
 
 - Git pre-commit (lefthook, `lefthook.yml`, installed by `npm install`): formats the staged files, then runs ESLint, tsc, ruff check, ty and gitleaks on the staged changes. It skips the tests.
 - Claude Code (`.claude/settings.json`, scripts in `.claude/hooks/`): `npm run check:quick` runs when Claude finishes a turn and sends any failure back once; edits to `.env` are blocked.
-- CI (`.github/workflows/ci.yml`): on every push, gitleaks scans the repo first, then `npm run check` runs. A failed run uploads the Playwright report.
+- CI (`.github/workflows/ci.yml`): on every push, gitleaks scans the repo first, then `npm run check:quick` runs. CI skips the end-to-end tests, so run `npm run check` locally before calling work finished.
 
 At Deploy, after the review fixes and before the merge, follow `docs/IMPROVE.md` to improve the harness.
 

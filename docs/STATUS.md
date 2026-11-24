@@ -349,6 +349,12 @@ Watch list (seen once; a second time calls for a fix in the harness):
 - `AGENTS.md` has a "Subagents" section describing both.
 - Tried on 23 Nov. reviewer reviewed `df6b07a` ("Deploy: harness improved"): no Important findings, three nits. ui-check checked the dashboard and pipeline in both modes: nothing off-brand, and the pipeline's Lost column starts off-screen at 1440 wide. Its four screenshots landed in the repo root because `ui-check.md` told it to pass a bare file name. A test after a restart showed the same result, so `ui-check.md` now tells it to put `.playwright-mcp/` in the file name, and `AGENTS.md` says why.
 
+## Quicker CI (23 Nov)
+
+- `.github/workflows/ci.yml` runs `npm run check:quick` instead of `npm run check`, so CI no longer runs the end-to-end tests, which took most of each run's time. They still run locally in `npm run check`. Gitleaks still scans first.
+- Taken out because only the end-to-end tests needed them: the step that uploaded the Playwright report on failure, and the HTML report that `playwright.config.ts` wrote only on CI. The end-to-end tests now use the list reporter everywhere.
+- `AGENTS.md` describes the new CI step. The CI entry above, under the harness work, describes CI as it was then.
+
 ## Ideas for later
 
 - The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.
