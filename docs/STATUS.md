@@ -363,6 +363,11 @@ Watch list (seen once; a second time calls for a fix in the harness):
 - `AGENTS.md` says to read `docs/spec.md` first, then only the area files the current change touches, and to keep every spec file a change affects up to date in the same change. `docs/REVIEW.md`'s two spec passes cover the area files and the index. `.claude/agents/reviewer.md` and `ui-check.md` point at the area files.
 - No code changed. The comment at the top of `frontend/src/shared/theme/tokens.css` still says "docs/spec.md, Colors"; the index in `docs/spec.md` leads to Colors in `docs/specs/look-and-feel.md`.
 
+## Sign-in, search and a user menu (multi-user)
+
+- `docs/spec.md` and the area files describe the product with this change. New area files: `docs/specs/accounts.md` and `docs/specs/search.md`. Concerns 16 to 23 are new.
+- `docs/changes/multi-user/plan.md` is written: 11 parts with one owner per file, four phases (sign-in and the database, search, user menu, Render and finish), 19 risks, and tests TB44 to TB56, TF22 to TF33, TE30 to TE37 (with TE23 to TE29 rewritten) and TM10 to TM19. It asks for three new dependencies: psycopg, PyJWT and `@supabase/auth-js`. No code yet.
+
 ## Ideas for later
 
 - The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.
