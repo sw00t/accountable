@@ -57,55 +57,6 @@
   color: var(--midnight);
   font-weight: 600;
 }
-/* The mode switch, pinned below the links. Sidebar colors only, so it looks the same in both modes. */
-.theme-switch {
-  margin-top: auto;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px 12px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--sea-mist);
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-}
-.theme-switch:hover {
-  background: var(--sidebar-hover);
-  color: var(--on-dark);
-}
-.theme-switch-label {
-  flex: 1;
-}
-.theme-switch-track {
-  position: relative;
-  width: 32px;
-  height: 18px;
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 1.5px var(--sea-mist);
-}
-.theme-switch-track::after {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--sea-mist);
-  transition: transform 0.15s ease-out;
-}
-.theme-switch[aria-checked="true"] .theme-switch-track {
-  background: var(--sea-green);
-  box-shadow: none;
-}
-.theme-switch[aria-checked="true"] .theme-switch-track::after {
-  background: var(--midnight);
-  transform: translateX(14px);
-}
 .workspace {
   min-width: 0;
 }

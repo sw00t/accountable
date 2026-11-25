@@ -1,4 +1,10 @@
-import { test, expect, SIGNED_OUT, signIn, signInScreen } from "./fixtures";
+import type { Page } from "@playwright/test";
+import { test, expect, SIGNED_OUT, accountCircle, accountMenu, chooseTheme, signIn, signInScreen } from "./fixtures";
+
+const expectTheme = async (page: Page, mode: string) => {
+  if (mode === "dark") await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  else await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+};
 
 // The fixture fails any test with a console error (G11). This one walks every
 // page and opens every panel and dialog, so nothing is missed between the other tests,
@@ -6,7 +12,13 @@ import { test, expect, SIGNED_OUT, signIn, signInScreen } from "./fixtures";
 for (const mode of ["light", "dark"]) {
   test(`TE21 every page and action runs with no console errors in ${mode} mode`, async ({ page }) => {
     await page.goto("/");
-    if (mode === "dark") await page.getByRole("switch", { name: "Dark mode" }).click();
+    // The theme, switched through the open user menu, walked with the arrow keys first.
+    await accountCircle(page).click();
+    await expect(accountMenu(page)).toBeVisible();
+    for (const key of ["ArrowDown", "ArrowDown", "ArrowDown", "ArrowDown", "End", "Home"]) await page.keyboard.press(key);
+    // Dark is the default, so the dark run switches to Light and back.
+    if (mode === "dark") await chooseTheme(page, "Light");
+    await chooseTheme(page, mode === "dark" ? "Dark" : "Light");
     const sections = page.getByRole("navigation", { name: "Sections" });
     for (const name of ["Dashboard", "Pipeline", "Deals", "Contacts", "Organizations"]) {
       await sections.getByRole("link", { name }).click();
@@ -58,7 +70,7 @@ for (const mode of ["light", "dark"]) {
     await search.fill("xyzzy");
     await expect(page.getByRole("search").getByRole("paragraph").filter({ hasText: 'No organizations, contacts or deals match "xyzzy".' })).toBeVisible();
     await search.press("Escape");
-    await expect(page.getByRole("switch", { name: "Dark mode" })).toBeChecked({ checked: mode === "dark" });
+    await expectTheme(page, mode);
   });
 }
 
@@ -67,14 +79,13 @@ test.describe("signed out", () => {
   test.use(SIGNED_OUT);
   for (const mode of ["light", "dark"]) {
     test(`TE21 the sign-in screen runs with no console errors in ${mode} mode`, async ({ page }) => {
-      if (mode === "dark") await page.addInitScript(() => localStorage.setItem("accountable.theme", "dark"));
+      if (mode === "light") await page.addInitScript(() => localStorage.setItem("accountable.theme", "light"));
       await page.goto("/contacts");
       await expect(signInScreen(page)).toBeVisible();
-      if (mode === "dark") await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-      else await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+      await expectTheme(page, mode);
       await signIn(page);
       await expect(page.getByRole("heading", { level: 1, name: "Contacts" })).toBeVisible();
-      await expect(page.getByRole("switch", { name: "Dark mode" })).toBeChecked({ checked: mode === "dark" });
+      await expectTheme(page, mode);
     });
   }
 });

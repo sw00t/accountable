@@ -25,6 +25,20 @@ export async function signIn(page: Page) {
   await expect(page.getByRole("navigation", { name: "Sections" })).toBeVisible();
 }
 
+/** The initials circle in the top bar, which opens the user menu (U11). */
+export const accountCircle = (page: Page) => page.getByRole("button", { name: `Account menu for ${TEST_USER.name}` });
+export const accountMenu = (page: Page) => page.getByRole("menu", { name: `Account menu for ${TEST_USER.name}` });
+
+/** Chooses a theme in the user menu (M1), then closes the menu. */
+export async function chooseTheme(page: Page, name: "Light" | "Dark" | "System") {
+  if ((await accountCircle(page).getAttribute("aria-expanded")) !== "true") await accountCircle(page).click();
+  const choice = accountMenu(page).getByRole("menuitemradio", { name });
+  await choice.click();
+  await expect(choice).toBeChecked();
+  await page.keyboard.press("Escape");
+  await expect(accountMenu(page)).toBeHidden();
+}
+
 /** The access token a stored state carries, so API calls made by a test are signed in too. */
 function accessToken(state: StorageState | string | undefined): string | null {
   if (typeof state !== "object") return null;

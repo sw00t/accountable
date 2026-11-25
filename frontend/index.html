@@ -5,14 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Accountable</title>
-    <!-- Sets the saved mode before the first paint, so a dark page never flashes light (M2). -->
+    <!-- Sets the saved theme before the first paint, so the page never flashes the other one (M2). -->
     <script>
       try {
-        if (localStorage.getItem("accountable.theme") === "dark") {
-          document.documentElement.dataset.theme = "dark";
-        }
+        var saved = localStorage.getItem("accountable.theme");
+        var dark =
+          saved === "system"
+            ? matchMedia("(prefers-color-scheme: dark)").matches
+            : saved !== "light";
+        if (dark) document.documentElement.dataset.theme = "dark";
       } catch {
-        // Storage is blocked: open in light mode.
+        // Storage is blocked: open dark, the theme until someone picks another (M1).
+        document.documentElement.dataset.theme = "dark";
       }
     </script>
   </head>

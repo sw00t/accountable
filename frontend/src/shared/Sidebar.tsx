@@ -1,6 +1,5 @@
 import { NavLink } from "react-router-dom";
 import { Building2, DollarSign, LayoutDashboard, SquareKanban, User } from "lucide-react";
-import { ThemeSwitch } from "./ThemeSwitch";
 
 const LINKS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -32,7 +31,6 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <ThemeSwitch />
     </aside>
   );
 }

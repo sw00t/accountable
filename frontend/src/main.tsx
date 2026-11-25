@@ -9,6 +9,10 @@ import App from "./App";
 import { SessionGate } from "./account/SessionGate";
 import { makeQueryClient } from "./shared/queryClient";
 import { ToastProvider } from "./shared/Toast";
+import { followDeviceTheme } from "./shared/theme/mode";
+
+// The theme choice is mounted only while the user menu is open, so following the device is app-wide.
+followDeviceTheme();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

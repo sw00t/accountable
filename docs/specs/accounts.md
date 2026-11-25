@@ -30,7 +30,7 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 ### User menu
 
 - **U11** The user menu sits at the right of the top bar on every page: a circle with the person's initials. The initials are the first letters of the first and last words of the display name, or one letter for a one-word name, or the email's first letter when there's no name, in capitals.
-- **U12** The menu shows the person's name and email, the theme choice (M1) and "Sign out". It opens with a click, or with Enter or Space when the circle has keyboard focus. The arrow keys move through it, and Escape or a click outside closes it and puts focus back on the circle. Screen readers announce the circle as "Account menu for Jane Smith".
+- **U12** The menu shows the person's name and email, the theme choice (M1) and "Sign out". It opens with a click, or with Enter or Space when the circle has keyboard focus. The arrow keys move through it, the theme choices included. Escape or Tab closes it and puts focus back on the circle. A click outside closes it too, and puts focus back on the circle unless the click landed in a field, such as the search box, where focus stays. Choosing a theme applies it and keeps the menu open. Screen readers announce the circle as "Account menu for Jane Smith", or with the email for someone with no display name.
 
 ## Design
 

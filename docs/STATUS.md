@@ -482,7 +482,7 @@ The user set up the Supabase project following the guide at the top of this file
 
 Still open, for later phases: `test_performance.py::test_full_size_within_budget` failed once while other agents were running tests, and passed on its own. Worth watching in TM18.
 
-### PH2 Search: built
+### PH2 Search: done
 
 SC4 is met: the search box in the top bar finds an organization, a contact and a deal by part of a name in any case, and opens the one chosen.
 
@@ -495,13 +495,26 @@ SC4 is met: the search box in the top bar finds an organization, a contact and a
 - **Spec gaps filled in `search.md`:** the "C" collation in the data model; and in the search box's screen, the second lines when an organization, industry or stage is missing, the keys (wrapping, Up from nothing goes to the last result, Down reopens, Enter with nothing highlighted does nothing), Escape keeping the text, focus closing and reopening the results, the failed-search message, and what screen readers hear.
 - **Tests:** `npm run check` passes in full: backend 476 passed, frontend 510 unit tests in 37 files, end-to-end 53 passed.
 
-Still open:
+Checked on Supabase: after the user's `npm run build` and `npm start` applied migration 0003 there, "gArCiA" found Garcia Freight, Sabrina Garcia and the two Garcia deals, and the arrow keys and Enter opened one.
 
-- The next `npm start` applies migration 0003 to Supabase. Check that search works there too, with the same order as locally.
-- For PH4: check which Host header Render's health check sends to `/api/health`. If it isn't the `onrender.com` host, the host check refuses it.
+Still open, for PH4:
+
+- Check which Host header Render's health check sends to `/api/health`. If it isn't the `onrender.com` host, the host check refuses it.
+
+### PH3 User menu: built
+
+- **Theme (PT7):** dark is now the theme until someone picks another, and System follows the device's setting as it changes. `index.html`'s script reads `light`, `dark` or `system` from `accountable.theme` and treats anything else as dark, so a light or dark choice saved before this change is kept. `mode.ts` applies and saves the theme, and its `followDeviceTheme()` is called once from `main.tsx`.
+- **User menu (PT7):** a Sea Green circle with the person's initials at the right of the top bar. The menu shows their name and email, the Light, Dark and System choice, and Sign out. Signing out clears the cached data, shows the sign-in screen and keeps the theme. It works by keyboard: Enter or Space opens it, the arrows move through it and into the theme choices, and Escape or Tab closes it with focus back on the circle. Choosing a theme keeps the menu open.
+- **Accessibility:** the theme choices are radio items in a menu group named "Theme", so screen readers say which is "checked". The circle is announced as "Account menu for" the person's name, or their email when they have no display name.
+- **Top bar and sidebar (PT6):** the menu sits in the top bar, and the sidebar's dark mode switch is gone, with its styles. `ThemeSwitch.tsx` and its test are deleted.
+- **Product owner's decision:** a click outside the open menu closes it and puts focus back on the circle, unless the click landed in a field such as the search box, where focus stays. U12 is updated to match.
+- **Product owner's decision on M1:** screen readers announce the chosen theme as "checked", as the menu's radio items do; M1 in `look-and-feel.md` is updated.
+- **Departures from the plan,** all now in `plan.md`: `main.tsx` changed again in W3.3 for `followDeviceTheme()`; the theme choice uses menu radio items rather than plain buttons; TF32 covers choosing with Enter and Space and TF30 reaching the choices with the arrows; TF33 also checks the sidebar has no switch, button or "dark mode" text.
+- **Spec gaps filled in U12:** Tab closes the menu like Escape; choosing a theme keeps it open; the circle's name uses the email when there's no display name.
+- **Tests:** `npm run check` passes in full: backend 476 passed, frontend 537 unit tests in 39 files (ThemeSwitch's tests deleted), end-to-end 56 passed. PT10 added TE36 and TE37, rewrote TE23 to TE29 for the menu's theme choice, and TE21 now walks the open menu.
 
 ## Ideas for later
 
 - The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.
-- The "Dark mode" switch takes more sidebar space than it needs; make it a small icon that toggles dark mode on and off.
+- The "Dark mode" switch takes more sidebar space than it needs; make it a small icon that toggles dark mode on and off. Done in multi-user PH3: the switch was replaced by the theme choice in the user menu.
 - Hide people's emails where they have no display name, rather than showing the email in "Added by" and "Last changed by" (U9 shows the email today). This changes the spec, so it belongs in a later change, not multi-user.
