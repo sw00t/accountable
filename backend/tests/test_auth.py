@@ -3,8 +3,10 @@
 import base64
 import hashlib
 import hmac
+import io
 import json
 import re
+import urllib.error
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 
@@ -134,6 +136,8 @@ class KeySet:
     def __init__(self):
         self.keys: list[dict] = []
         self.fetches = 0
+        # Set to an error to make the next fetches fail with it, as when Supabase can't be reached.
+        self.failure: Exception | None = None
 
     def publish(self, private_key, key_id: str) -> None:
         if isinstance(private_key, rsa.RSAPrivateKey):
@@ -145,6 +149,8 @@ class KeySet:
     def __call__(self, url: str) -> dict:
         assert url == f"{SUPABASE_ISSUER}/.well-known/jwks.json"
         self.fetches += 1
+        if self.failure is not None:
+            raise self.failure
         return {"keys": list(self.keys)}
 
 
@@ -323,6 +329,86 @@ def test_unknown_key_ids_fetch_no_more_than_every_few_minutes(probe, supabase, c
     for key_id in ("made-up-1", "made-up-2", "made-up-3"):
         assert_refused(probe.get("/probe", headers=bearer(jane_token(STRANGER_KEY, key_id))))
     assert supabase.fetches == 1
+
+
+# A failed fetch of the key set: Supabase can't be reached, is too slow, or sends something
+# other than a key set. The fetch itself is stubbed, so these stand in for each.
+FETCH_FAILURES = {
+    "unreachable": urllib.error.URLError("connection refused"),
+    "too slow": TimeoutError("timed out"),
+    "not JSON": json.JSONDecodeError("Expecting value", "<html>", 0),
+    "not a key set": TypeError("Supabase's key set isn't a JSON object."),
+    "no usable keys": jwt.PyJWKSetError("The JWK Set did not contain any keys"),
+}
+
+
+@pytest.mark.parametrize("body", [b"[]", b'"keys"', b"null"])
+def test_a_reply_that_isnt_a_key_set_is_a_failed_fetch(monkeypatch, body):
+    monkeypatch.setattr(auth.urllib.request, "urlopen", lambda *_a, **_k: io.BytesIO(body))
+    with pytest.raises(TypeError):
+        auth.fetch_key_set(f"{SUPABASE_ISSUER}/.well-known/jwks.json")
+
+
+def assert_unavailable(response) -> None:
+    assert response.status_code == 503
+    assert response.json()["detail"] == auth.KEYS_UNAVAILABLE_MESSAGE
+
+
+@pytest.mark.parametrize("failure", FETCH_FAILURES)
+def test_a_failed_fetch_keeps_the_session_and_is_tried_again_soon(probe, supabase, clock, failure):
+    supabase.failure = FETCH_FAILURES[failure]
+    assert_unavailable(probe.get("/probe", headers=bearer(jane_token())))
+
+    supabase.failure = None
+    clock.now += auth.RETRY_AFTER_FAILURE_SECONDS
+    assert probe.get("/probe", headers=bearer(jane_token())).status_code == 200
+    assert supabase.fetches == 2
+
+
+def test_a_failed_fetch_isnt_tried_again_straight_away(probe, supabase, clock):
+    supabase.failure = FETCH_FAILURES["unreachable"]
+    for _ in range(3):
+        assert_unavailable(probe.get("/probe", headers=bearer(jane_token())))
+    assert supabase.fetches == 1
+
+
+def test_a_failed_fetch_keeps_the_keys_already_held(probe, supabase, clock):
+    probe.get("/probe", headers=bearer(jane_token()))
+    supabase.publish(ROTATED_KEY, "supabase-key-2")
+    supabase.failure = FETCH_FAILURES["unreachable"]
+    clock.now += auth.REFETCH_AFTER_SECONDS
+
+    rotated = bearer(jane_token(ROTATED_KEY, "supabase-key-2"))
+    assert_unavailable(probe.get("/probe", headers=rotated))
+    assert probe.get("/probe", headers=bearer(jane_token())).status_code == 200
+
+    supabase.failure = None
+    clock.now += auth.RETRY_AFTER_FAILURE_SECONDS
+    assert probe.get("/probe", headers=rotated).status_code == 200
+
+
+def test_after_a_good_fetch_an_unknown_key_is_refused_again(probe, supabase, clock):
+    supabase.failure = FETCH_FAILURES["unreachable"]
+    probe.get("/probe", headers=bearer(jane_token()))
+    supabase.failure = None
+    clock.now += auth.RETRY_AFTER_FAILURE_SECONDS
+
+    assert probe.get("/probe", headers=bearer(jane_token())).status_code == 200
+    assert_refused(probe.get("/probe", headers=bearer(jane_token(STRANGER_KEY, "made-up"))))
+
+
+def test_a_known_key_doesnt_wait_for_a_fetch(supabase):
+    keys = auth.supabase_keys(SUPABASE_URL)
+    keys.get(KEY_ID)
+    with keys._lock:  # as while another request is fetching
+        assert keys.get(KEY_ID).key_id == KEY_ID
+
+
+def test_the_api_answers_a_failed_fetch_with_503_and_its_message(signed_out_client, supabase):
+    supabase.failure = FETCH_FAILURES["unreachable"]
+    response = signed_out_client.get("/api/organizations", headers=bearer(jane_token()))
+    assert response.status_code == 503
+    assert response.json() == {"message": auth.KEYS_UNAVAILABLE_MESSAGE, "fields": {}}
 
 
 # --- TB48: the users table --------------------------------------------------

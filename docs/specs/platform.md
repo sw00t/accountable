@@ -159,7 +159,7 @@ Indexes: every foreign key, `deals(stage, position)`, `activities(follow_up_on, 
 
 ### API
 
-All under `/api`. Responses are JSON. Every route except `GET /health`, `GET /config` and local sign-in needs the header `Authorization: Bearer <token>` (U5). Errors use one shape: `{"message": "...", "fields": {"email": "Enter an email address like name@company.com"}}`, with status 400 for validation or a request addressed to another host (G6), 401 for a missing, invalid or expired token, 404 for a missing record and 500 for anything unexpected, which is logged on the server and shown to the user as a general friendly message.
+All under `/api`. Responses are JSON. Every route except `GET /health`, `GET /config` and local sign-in needs the header `Authorization: Bearer <token>` (U5). Errors use one shape: `{"message": "...", "fields": {"email": "Enter an email address like name@company.com"}}`, with status 400 for validation or a request addressed to another host (G6), 401 for a missing, invalid or expired token, 404 for a missing record, 503 when Supabase's signing keys can't be fetched to check a token (see Checking the token in `accounts.md`) and 500 for anything unexpected, which is logged on the server and shown to the user as a general friendly message.
 
 Each area file lists its own endpoints. The one that belongs to no section:
 
@@ -172,7 +172,7 @@ The `today` date comes from the browser in an `X-Local-Date` header, so "late", 
 ### Deployment
 
 - Render runs one web service from `render.yaml` on the free plan. Its build installs the backend and frontend dependencies and builds the frontend. Its start command runs the backend on the port Render gives it, which runs the migrations and then serves the app (G13, G16).
-- The backend's allowed hosts (G6) are `127.0.0.1`, `localhost` and, on Render, the service's own address, which Render provides in `RENDER_EXTERNAL_HOSTNAME`.
+- The backend's allowed hosts (G6) are `127.0.0.1`, `localhost` and, on Render, the service's own address, which Render provides in `RENDER_EXTERNAL_HOSTNAME`. Host names are compared without regard to case or a trailing dot.
 - `DATABASE_URL` is the Supabase project's session pooler connection string (Concern 23). The Render service and the Supabase project are in the same region, to keep each query quick: Oregon, for a Supabase project in US West.
 
 ### Testing

@@ -63,7 +63,7 @@ Organizations, contacts, deals and activities each have two more columns:
 
 The responses for an organization, contact or deal include who added it and who last changed it, each as the name to show (U9) with the date. Timeline activities include who added them.
 
-**Checking the token.** With Supabase, the backend checks each token's signature against the signing keys Supabase publishes for the project, fetched once and kept, and checks it hasn't expired. With local sign-in, the backend makes its own key when it starts and accepts only tokens signed with it. Either way the token gives the person's id, email and display name.
+**Checking the token.** With Supabase, the backend checks each token's signature against the signing keys Supabase publishes for the project, fetched once and kept, and checks it hasn't expired. If the keys can't be fetched, such as while Supabase is slow to answer a service that has just woken (Concern 22), a token naming a key the backend doesn't hold gets status 503 and "Accountable can't check your sign-in right now. Try again in a moment.", not 401, so no one is signed out; the backend tries again a few seconds later. With local sign-in, the backend makes its own key when it starts and accepts only tokens signed with it. Either way the token gives the person's id, email and display name.
 
 ### Screens
 

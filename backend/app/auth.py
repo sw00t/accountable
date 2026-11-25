@@ -6,6 +6,7 @@ A token from one mode is never accepted by the other: the keys and issuers diffe
 """
 
 import json
+import logging
 import threading
 import urllib.request
 import uuid
@@ -24,12 +25,18 @@ from sqlalchemy.exc import IntegrityError
 from app import config
 from app.db import insert_row, users
 
+log = logging.getLogger("accountable")
+
 SIGN_IN_MESSAGE = "Sign in to use Accountable."
 AUDIENCE = "authenticated"
 SUPABASE_ALGORITHMS = {"ES256", "RS256"}
 # A token naming a key we don't have fetches the key set again, but no more often than this,
 # so tokens with made-up key ids can't make every request call Supabase (R8).
 REFETCH_AFTER_SECONDS = 300
+# After a fetch fails, such as while Supabase is slow to answer a service that has just woken,
+# the next try waits only this long.
+RETRY_AFTER_FAILURE_SECONDS = 5
+KEYS_UNAVAILABLE_MESSAGE = "Accountable can't check your sign-in right now. Try again in a moment."
 
 LOCAL_ISSUER = "accountable-local-sign-in"
 LOCAL_KEY_ID = "accountable-local"
@@ -42,6 +49,14 @@ class NotSignedIn(HTTPException):
 
     def __init__(self) -> None:
         super().__init__(401, SIGN_IN_MESSAGE, headers={"WWW-Authenticate": "Bearer"})
+
+
+class KeysUnavailable(HTTPException):
+    """Supabase's signing keys couldn't be fetched, so a token can't be checked either way.
+    A 503 rather than a 401, so the frontend keeps a session that may be fine (U5)."""
+
+    def __init__(self) -> None:
+        super().__init__(503, KEYS_UNAVAILABLE_MESSAGE)
 
 
 @dataclass(frozen=True)
@@ -123,39 +138,66 @@ def _supabase_key(settings: config.Settings, header: dict[str, Any]) -> tuple[An
 
 def fetch_key_set(url: str) -> dict[str, Any]:
     with urllib.request.urlopen(url, timeout=10) as response:
-        return json.load(response)
+        key_set = json.load(response)
+    if not isinstance(key_set, dict):
+        raise TypeError("Supabase's key set isn't a JSON object.")
+    return key_set
 
 
 class SupabaseKeys:
     """The project's published signing keys: fetched once and kept, and fetched again
-    when a token names a key id they don't have, such as after Supabase rotates its keys."""
+    when a token names a key id they don't have, such as after Supabase rotates its keys.
+
+    A failed fetch keeps the keys already held and is tried again a few seconds later.
+    Until a fetch succeeds, a token naming a key not held gets KeysUnavailable, not
+    NotSignedIn, since the key may well exist."""
 
     def __init__(self, supabase_url: str):
         self.url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
         self._keys: dict[str, jwt.PyJWK] = {}
-        self._fetched_at: float | None = None
+        self._next_fetch_at: float | None = None
+        self._last_fetch_failed = False
         self._lock = threading.Lock()
 
     def get(self, key_id: str) -> jwt.PyJWK:
-        with self._lock:
-            if key_id not in self._keys and self._may_fetch():
-                self._fetch()
-            key = self._keys.get(key_id)
+        # The keys are replaced whole, never changed in place, so reading them needs no lock,
+        # and a token with a known key never waits while another request fetches.
+        key = self._keys.get(key_id)
+        if key is None:
+            key = self._fetched(key_id)
         if key is None:
             raise NotSignedIn()
         return key
 
+    def _fetched(self, key_id: str) -> jwt.PyJWK | None:
+        """The key after fetching the key set, if it's due, under the lock so only one
+        request fetches at a time."""
+        with self._lock:
+            if key_id not in self._keys and self._may_fetch():
+                self._fetch()
+            key = self._keys.get(key_id)
+            if key is None and self._last_fetch_failed:
+                raise KeysUnavailable()
+            return key
+
     def _may_fetch(self) -> bool:
-        return self._fetched_at is None or monotonic() - self._fetched_at >= REFETCH_AFTER_SECONDS
+        return self._next_fetch_at is None or monotonic() >= self._next_fetch_at
 
     def _fetch(self) -> None:
-        self._fetched_at = monotonic()
-        key_set = jwt.PyJWKSet.from_dict(fetch_key_set(self.url))
+        try:
+            key_set = jwt.PyJWKSet.from_dict(fetch_key_set(self.url))
+        except (OSError, ValueError, TypeError, jwt.PyJWTError):
+            log.warning("Couldn't fetch Supabase's signing keys", exc_info=True)
+            self._last_fetch_failed = True
+            self._next_fetch_at = monotonic() + RETRY_AFTER_FAILURE_SECONDS
+            return
         self._keys = {
             key.key_id: key
             for key in key_set.keys
             if key.key_id and key.algorithm_name in SUPABASE_ALGORITHMS
         }
+        self._last_fetch_failed = False
+        self._next_fetch_at = monotonic() + REFETCH_AFTER_SECONDS
 
 
 @cache

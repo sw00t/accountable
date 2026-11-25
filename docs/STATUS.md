@@ -565,6 +565,16 @@ mv .env ../accountable.env.off && npm run check; mv ../accountable.env.off .env
 
 The multi-user change is complete: every phase, work item and by-hand check is done.
 
+### Review of the multi-user branch (25 Nov)
+
+The `reviewer` subagent reviewed `main..multi-user` and found one Important problem and five nits. The security pass found nothing else: token checks, search's bound parameters, row level security and the handling of settings all held up.
+
+- **Important, fixed: a failed key fetch signed everyone out for five minutes.** `SupabaseKeys` recorded the fetch time before fetching Supabase's signing keys, and a network error wasn't caught. So the first request got a 500, and for the next five minutes every request got a 401 with a valid token, which the frontend reads as an ended session. This was most likely when Render wakes while Supabase is slow (Concern 22). Now a failed fetch keeps the keys already held, answers 503 "Accountable can't check your sign-in right now. Try again in a moment." so no one is signed out, and is tried again after 5 seconds (`RETRY_AFTER_FAILURE_SECONDS`). A reply that isn't a JSON object counts as a failed fetch. `accounts.md` (Checking the token) and `platform.md` (API errors) now describe the 503. The frontend shows its usual "Something went wrong" message for it, as for any 5xx, and keeps the session.
+- **Nit, fixed: a known key waited behind a fetch.** Every request took the lock, so all of them waited while one fetched (up to 10 s). A token whose key is held is now checked without the lock, and only requests needing a fetch wait for it.
+- **Nit, fixed: the Host check was case-sensitive (G6).** `LOCALHOST`, `localhost.` or an upper-case `RENDER_EXTERNAL_HOSTNAME` were refused. Both sides are now lower-cased and lose a trailing dot; `platform.md` says so.
+- **Nits, left as they are, with the product owner's agreement:** a missing `SUPABASE_URL` gives a 500 rather than a 401 (the startup check already stops the app without it); local sign-in is refused only when `RENDER` is set, which meets U7, and `start.mjs` removes the variable; `/api/testing/reset` has no sign-in check, but it's mounted only when `ACCOUNTABLE_TESTING=1`, which `render.yaml` never sets, and it only touches SQLite.
+- **Tests:** `npm run check` passes in full: backend 507 passed, frontend 538 unit tests in 39 files, end-to-end 56 passed. TB47 gains the failed-fetch tests (five kinds of failure, no retry straight away, the keys already held are kept, the API's 503 and its message, a known key found while the lock is held) and a test that a reply that isn't a key set fails the fetch. TB54 and RV10's host tests gain upper case and trailing dots. Run against the old code, every new test failed (the lock test deadlocked); with the fix they pass. `plan.md`'s R8, TB47 and TB54 are updated.
+
 ## Ideas for later
 
 - The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.

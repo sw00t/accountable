@@ -38,3 +38,14 @@ def test_renders_health_check_is_answered(signed_out_client, monkeypatch):
 def test_nothing_answers_an_unknown_host(client, monkeypatch, path):
     monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", RENDER_HOST)
     assert client.get(path, headers={"Host": "evil.example.com"}).status_code == 400
+
+
+@pytest.mark.parametrize("host", [RENDER_HOST.upper(), f"{RENDER_HOST}.", f"{RENDER_HOST}:443"])
+def test_the_render_host_is_answered_in_any_case_and_with_a_trailing_dot(client, monkeypatch, host):
+    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", RENDER_HOST)
+    assert client.get("/api/organizations", headers={"Host": host}).status_code == 200
+
+
+def test_an_upper_case_render_hostname_still_answers(client, monkeypatch):
+    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", RENDER_HOST.upper())
+    assert client.get("/api/organizations", headers={"Host": RENDER_HOST}).status_code == 200

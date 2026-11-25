@@ -12,7 +12,7 @@ from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import config
-from app.auth import SIGN_IN_MESSAGE
+from app.auth import KEYS_UNAVAILABLE_MESSAGE, SIGN_IN_MESSAGE
 from app.db import app_engine, migrate
 from app.deps import get_person
 from app.routers import (
@@ -70,9 +70,15 @@ def allowed_hosts() -> set[str]:
     render_host = config.settings().render_host
     return (
         LOCAL_HOSTS
-        | ({render_host} if render_host else set())
+        | ({host_name(render_host)} if render_host else set())
         | ({"testserver"} if config.testing() else set())
     )
+
+
+def host_name(host: str) -> str:
+    """A Host header's name without its port, lower-cased and without a trailing dot,
+    since LOCALHOST and localhost. name the same computer as localhost."""
+    return host.split(":")[0].lower().rstrip(".")
 
 
 class KnownHostsOnly:
@@ -84,7 +90,7 @@ class KnownHostsOnly:
 
     async def __call__(self, scope, receive, send):
         if scope["type"] in ("http", "websocket"):
-            host = Headers(scope=scope).get("host", "").split(":")[0]
+            host = host_name(Headers(scope=scope).get("host", ""))
             if host not in allowed_hosts():
                 if scope["type"] == "websocket":
                     await send({"type": "websocket.close", "code": 1008})
@@ -189,6 +195,8 @@ async def on_http_error(request: Request, exc: StarletteHTTPException) -> Respon
         message = "We couldn't find that page in Accountable."
     elif exc.status_code == 405:
         message = "Accountable can't do that here."
+    elif exc.status_code == 503:
+        message = KEYS_UNAVAILABLE_MESSAGE
     else:
         message = GENERAL_ERROR
     return JSONResponse(

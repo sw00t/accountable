@@ -329,7 +329,20 @@ def test_text_at_its_limit_saves_and_one_more_is_refused(client, records, kind, 
 # --- Host header (RV10) --------------------------------------------------------
 
 
-@pytest.mark.parametrize("host", ["127.0.0.1", "127.0.0.1:8000", "localhost", "localhost:5173"])
+@pytest.mark.parametrize(
+    "host",
+    [
+        "127.0.0.1",
+        "127.0.0.1:8000",
+        "localhost",
+        "localhost:5173",
+        # Host names don't depend on case, and a trailing dot names the same host.
+        "LOCALHOST",
+        "LocalHost:5173",
+        "localhost.:8000",
+        "127.0.0.1.",
+    ],
+)
 def test_local_hosts_are_answered(client, host):
     assert client.get("/api/deals", headers={"Host": host}).status_code == 200
 
