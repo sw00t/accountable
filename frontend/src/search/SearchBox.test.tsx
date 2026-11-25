@@ -337,3 +337,17 @@ test("says plainly when the search fails", async () => {
   await answer(requests[0], NOTHING, 500);
   expect(screen.getByText(/^Couldn't search\./)).toBeVisible();
 });
+
+test("a failed search says so rather than keep the earlier results", async () => {
+  const requests = stubSearch({ garcia: GARCIA });
+  const box = renderBox();
+  await typeAndPause(box, "garcia");
+  expect(optionNames()).toContain("Garcia Freight");
+
+  await typeAndPause(box, "heath");
+  expect(optionNames()).toContain("Garcia Freight");
+  await answer(requests[1], NOTHING, 500);
+
+  expect(screen.getByText(/^Couldn't search\./)).toBeVisible();
+  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+});

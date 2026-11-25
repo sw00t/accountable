@@ -575,6 +575,22 @@ The `reviewer` subagent reviewed `main..multi-user` and found one Important prob
 - **Nits, left as they are, with the product owner's agreement:** a missing `SUPABASE_URL` gives a 500 rather than a 401 (the startup check already stops the app without it); local sign-in is refused only when `RENDER` is set, which meets U7, and `start.mjs` removes the variable; `/api/testing/reset` has no sign-in check, but it's mounted only when `ACCOUNTABLE_TESTING=1`, which `render.yaml` never sets, and it only touches SQLite.
 - **Tests:** `npm run check` passes in full: backend 507 passed, frontend 538 unit tests in 39 files, end-to-end 56 passed. TB47 gains the failed-fetch tests (five kinds of failure, no retry straight away, the keys already held are kept, the API's 503 and its message, a known key found while the lock is held) and a test that a reply that isn't a key set fails the fetch. TB54 and RV10's host tests gain upper case and trailing dots. Run against the old code, every new test failed (the lock test deadlocked); with the fix they pass. `plan.md`'s R8, TB47 and TB54 are updated.
 
+### Independent review of the multi-user branch (25 Nov)
+
+Reviewed `main...multi-user` through `1a8acc7`, with an emphasis on code quality and readability, and recorded the findings in [INDEPENDENT_REVIEW.md](INDEPENDENT_REVIEW.md): four Important findings and two nits, all confirmed by probes.
+
+### Independent review fixes (25 Nov)
+
+All six findings were fixed:
+
+- **A late 401 ending a newer session:** `api()` keeps the session link it started with, through getting the token and the reply, and a 401 ends only that link while it's still the current one.
+- **The menu keeping an old identity:** `SessionGate` subscribes to auth-js's `onAuthStateChange`, so a renewed session, or one signed in from another tab, updates the person shown (Concern 17).
+- **A failed search showing earlier results:** `useSearch` keeps the last results only while the current text's reply is due; a failed search shows "Couldn't search.".
+- **Local sign-out ending every browser:** the local stand-in tracks each refresh token's sign-in session across renewals and honours Supabase's `local`, `others` and `global` scopes. TE36 now signs in with its own session, so its sign-out can't touch the session the other tests share.
+- **Nits:** a failed insert of a person's row is retried only when the other request's row is there, and is raised otherwise; the lock test holds a fetch up on another thread with bounded waits, so a regression fails rather than hangs.
+- **Tests:** TF22, TF25, TF27, TB48 and TB49 gain regression tests, and TB47's lock test is rewritten. Run against the old code, each new test failed (the insert test with a recursion error), except the rewritten lock test, which guards against a regression the code doesn't have. `plan.md` is updated: R12, R15, TB47 to TB49, TF22, TF25, TF27, TE36 and the `SessionGate.tsx` row. `npm run check` passes in full: backend 512, frontend 543 unit tests in 39 files, end-to-end 56.
+- **TB41's retries:** `/api/dashboard` once took 457 ms while the machine was busy, though over five runs it averaged 13.5 ms (the slowest endpoint, `/api/contacts`, averaged 41 ms). With the product owner's agreement, the budget stays at G7's 200 ms and a request over it is timed again, up to three times, failing only if every try is over. A normal run makes no extra requests, so the test stays well inside IC14's one second.
+
 ## Ideas for later
 
 - The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.

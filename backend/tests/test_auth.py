@@ -6,7 +6,9 @@ import hmac
 import io
 import json
 import re
+import threading
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 
@@ -19,10 +21,11 @@ from fastapi.routing import APIRoute, RouteContext, iter_route_contexts
 from fastapi.testclient import TestClient
 from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app import auth
 from app.auth import LOCAL_ISSUER, LOCAL_KEY_ID, SIGN_IN_MESSAGE, TEST_USER, Claims, local_token
-from app.db import organizations, users
+from app.db import insert_row, organizations, users
 from app.deps import Person, get_conn
 from app.main import app
 
@@ -397,11 +400,28 @@ def test_after_a_good_fetch_an_unknown_key_is_refused_again(probe, supabase, clo
     assert_refused(probe.get("/probe", headers=bearer(jane_token(STRANGER_KEY, "made-up"))))
 
 
-def test_a_known_key_doesnt_wait_for_a_fetch(supabase):
+def test_a_known_key_doesnt_wait_for_a_fetch(supabase, clock, monkeypatch):
     keys = auth.supabase_keys(SUPABASE_URL)
     keys.get(KEY_ID)
-    with keys._lock:  # as while another request is fetching
-        assert keys.get(KEY_ID).key_id == KEY_ID
+    clock.now += auth.REFETCH_AFTER_SECONDS
+    fetching, release = threading.Event(), threading.Event()
+
+    def slow_fetch(url: str) -> dict:
+        fetching.set()
+        release.wait(timeout=5)
+        return supabase(url)
+
+    monkeypatch.setattr(auth, "fetch_key_set", slow_fetch)
+    with ThreadPoolExecutor() as pool:
+        try:
+            unknown = pool.submit(keys.get, "rotated-key")
+            assert fetching.wait(timeout=5)
+            known = pool.submit(keys.get, KEY_ID)
+            assert known.result(timeout=1).key_id == KEY_ID
+        finally:
+            release.set()
+        with pytest.raises(auth.NotSignedIn):
+            unknown.result(timeout=5)
 
 
 def test_the_api_answers_a_failed_fetch_with_503_and_its_message(signed_out_client, supabase):
@@ -447,6 +467,30 @@ def test_a_changed_name_or_email_updates_the_row(probe, engine, changed):
     assert second["id"] == first["id"] == row.id
     assert (row.email, row.name) == (changed.email, changed.name)
     assert row.updated_at >= row.created_at
+
+
+def test_a_row_added_by_a_request_at_the_same_moment_is_used(conn, monkeypatch):
+    def added_first_by_the_other_request(connection, table, **values):
+        insert_row(connection, table, **values)
+        connection.commit()
+        raise IntegrityError("INSERT INTO users", {}, Exception("UNIQUE constraint failed"))
+
+    monkeypatch.setattr(auth, "insert_row", added_first_by_the_other_request)
+
+    person = auth.person_for(conn, TEST_USER)
+
+    assert person.auth_id == TEST_USER.auth_id
+    assert [row.id for row in conn.execute(select(users.c.id))] == [person.id]
+
+
+def test_any_other_failure_adding_the_row_is_raised(conn, monkeypatch):
+    def failed(*_args, **_values):
+        raise IntegrityError("INSERT INTO users", {}, Exception("NOT NULL constraint failed"))
+
+    monkeypatch.setattr(auth, "insert_row", failed)
+
+    with pytest.raises(IntegrityError):
+        auth.person_for(conn, TEST_USER)
 
 
 def test_a_user_id_in_a_body_is_ignored(client, conn, second_person):

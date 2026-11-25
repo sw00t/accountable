@@ -27,7 +27,7 @@ export class ApiError extends Error {
 export type SessionLink = {
   /** The current access token, renewed first if it's due, or null when signed out. */
   accessToken: () => Promise<string | null>;
-  /** Called once, on the first 401, when the backend no longer accepts the session. */
+  /** Called once, on the first 401 for one of its requests, when the backend no longer accepts it. */
   ended: () => void;
 };
 
@@ -41,8 +41,8 @@ export function connectSession(link: SessionLink): () => void {
   };
 }
 
-async function authorization(): Promise<Record<string, string>> {
-  const token = await session?.accessToken();
+async function authorization(link: SessionLink | null): Promise<Record<string, string>> {
+  const token = await link?.accessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -50,23 +50,27 @@ async function authorization(): Promise<Record<string, string>> {
  * A refused session is told to the gate once and the request never settles, so no
  * screen raises a toast or an error for it (R12). The gate replaces the app with the
  * sign-in screen and clears the cached queries, which drops these requests.
+ * Only the session that sent the request is ended: a late refusal for an earlier
+ * session mustn't end the one signed in since (U3).
  */
-function sessionEnded(): Promise<never> {
-  const ended = session;
-  session = null;
-  ended?.ended();
+function sessionEnded(link: SessionLink | null): Promise<never> {
+  if (link !== null && session === link) {
+    session = null;
+    link.ended();
+  }
   return new Promise<never>(() => {});
 }
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
 export async function api<T>(path: string, method: Method = "GET", body?: unknown): Promise<T> {
+  const link = session;
   let response: Response;
   try {
     response = await fetch(`/api${path}`, {
       method,
       headers: {
-        ...(await authorization()),
+        ...(await authorization(link)),
         "X-Local-Date": localToday(),
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       },
@@ -75,7 +79,7 @@ export async function api<T>(path: string, method: Method = "GET", body?: unknow
   } catch {
     throw new ApiError(NETWORK_MESSAGE);
   }
-  if (response.status === 401) return sessionEnded();
+  if (response.status === 401) return sessionEnded(link);
   if (response.status === 204) return undefined as T;
   const data = await response.json().catch(() => null);
   if (!response.ok) throw failure(response.status, data);

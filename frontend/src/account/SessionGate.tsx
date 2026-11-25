@@ -59,6 +59,17 @@ export function SessionGate({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // A renewed session, or one signed in from another tab, may name the person differently,
+  // and requests already send its token, so the menu follows it (Concern 17).
+  useEffect(() => {
+    if (!account) return;
+    const { data } = account.auth.onAuthStateChange((_event, session) => {
+      if (session)
+        setState((current) => (current.status === "signed-in" ? signedIn(session) : current));
+    });
+    return () => data.subscription.unsubscribe();
+  }, [account]);
+
   function leave(notice: Notice | null) {
     setState({ status: "signed-out", notice });
     clearAll();

@@ -214,8 +214,10 @@ def local_signing_key() -> ec.EllipticCurvePrivateKey:
     return ec.generate_private_key(ec.SECP256R1())
 
 
-def local_token(claims: Claims, lifetime: timedelta = TOKEN_LIFETIME) -> str:
-    """A token like Supabase's, signed with the local key."""
+def local_token(
+    claims: Claims, lifetime: timedelta = TOKEN_LIFETIME, *, session_id: str | None = None
+) -> str:
+    """A token like Supabase's, signed with the local key, for the given sign-in session."""
     now = datetime.now(UTC)
     payload = {
         "sub": claims.auth_id,
@@ -226,7 +228,7 @@ def local_token(claims: Claims, lifetime: timedelta = TOKEN_LIFETIME) -> str:
         "iss": LOCAL_ISSUER,
         "iat": now,
         "exp": now + lifetime,
-        "session_id": str(uuid.uuid4()),
+        "session_id": session_id or str(uuid.uuid4()),
     }
     return jwt.encode(
         payload, local_signing_key(), algorithm=LOCAL_ALGORITHM, headers={"kid": LOCAL_KEY_ID}
@@ -255,8 +257,11 @@ def _add(conn: Connection, claims: Claims) -> User:
         user_id = insert_row(conn, users, **_fields(claims))
         conn.commit()
     except IntegrityError:
-        # Their first two requests arrived together and the other one added the row.
         conn.rollback()
+        # Their first two requests arrived together and the other one added the row.
+        # Any other cause is a real failure, so it's raised rather than retried.
+        if _find(conn, claims.auth_id) is None:
+            raise
         return person_for(conn, claims)
     return User(id=user_id, **_fields(claims))
 

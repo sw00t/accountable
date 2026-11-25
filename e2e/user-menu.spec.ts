@@ -1,11 +1,23 @@
-import { test, expect, TEST_USER, accountCircle, accountMenu, signIn, signInScreen } from "./fixtures";
+import {
+  test,
+  expect,
+  SIGNED_OUT,
+  TEST_USER,
+  accountCircle,
+  accountMenu,
+  signIn,
+  signInScreen,
+} from "./fixtures";
 
-// Signing out here ends only this test's session: each test has its own browser context,
-// and the shared signed-in state is never written back.
+// The test signs in with a session of its own, so signing out leaves the session the
+// other tests share able to renew (U4).
+test.use(SIGNED_OUT);
+
 test("TE36 the circle shows TU; the menu shows the person, works by keyboard, and signs out keeping the theme", async ({
   page,
 }) => {
   await page.goto("/contacts");
+  await signIn(page);
   await expect(page.getByRole("heading", { level: 1, name: "Contacts" })).toBeVisible();
   const circle = page.getByRole("banner").getByRole("button", { name: `Account menu for ${TEST_USER.name}` });
   await expect(circle).toHaveText("TU");

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { api } from "../shared/api";
 import { renderWithProviders } from "../shared/test-utils";
-import { SESSION_KEY, useSession } from "./session";
+import { openAccount, SESSION_KEY, useSession } from "./session";
 import { SessionGate } from "./SessionGate";
 
 const LOCAL = { sign_in: "local", supabase_url: null, supabase_publishable_key: null };
@@ -14,16 +14,18 @@ const USER = {
   user_metadata: { display_name: "Test User" },
 };
 
-function session(token: string) {
+function session(token: string, user = USER) {
   return {
     access_token: token,
     token_type: "bearer",
     expires_in: 3600,
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     refresh_token: `refresh-${token}`,
-    user: USER,
+    user,
   };
 }
+
+const renamed = (name: string) => ({ ...USER, user_metadata: { display_name: name } });
 
 function json(status: number, body?: unknown) {
   return new Response(body === undefined ? null : JSON.stringify(body), {
@@ -148,6 +150,38 @@ describe("SessionGate", () => {
     expect(screen.queryByText(/Your session has ended/)).not.toBeInTheDocument();
     expect(client.getQueryCache().getAll()).toHaveLength(0);
     expect(localStorage.getItem(SESSION_KEY)).toBeNull();
+  });
+
+  it("shows the name a renewed session carries", async () => {
+    let tokens = 0;
+    stubBackend({
+      "GET /api/me": meRoute,
+      "POST /api/local-auth/token": () =>
+        json(200, session(`token-${++tokens}`, tokens === 1 ? USER : renamed("Tess User"))),
+    });
+    const { user } = renderGate("/");
+    await user.click(await screen.findByRole("button", { name: "Sign in" }));
+    await screen.findByText("Signed in as Test User");
+
+    await (await openAccount()).auth.refreshSession();
+
+    expect(await screen.findByText("Signed in as Tess User")).toBeVisible();
+  });
+
+  it("shows the person a session signed in from another tab names", async () => {
+    stubBackend({ "GET /api/me": meRoute });
+    const { user } = renderGate("/");
+    await user.click(await screen.findByRole("button", { name: "Sign in" }));
+    await screen.findByText("Signed in as Test User");
+
+    const otherTab = new BroadcastChannel(SESSION_KEY);
+    otherTab.postMessage({
+      event: "SIGNED_IN",
+      session: session("other-tab", renamed("Jane Smith")),
+    });
+    otherTab.close();
+
+    expect(await screen.findByText("Signed in as Jane Smith")).toBeVisible();
   });
 
   it("says when sign-in can't be reached, and tries again on signing in", async () => {

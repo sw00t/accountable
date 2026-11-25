@@ -202,6 +202,49 @@ def test_signing_out_ends_the_session(account_app, clock):
     assert_auth_error(renew(account_app, session["refresh_token"]), 400, "refresh_token_not_found")
 
 
+def sign_out(client: TestClient, session: dict, scope: str):
+    headers = bearer(session["access_token"])
+    response = client.post(f"/api/local-auth/logout?scope={scope}", headers=headers)
+    assert response.status_code == 204
+
+
+def test_signing_out_this_browser_leaves_other_browsers_signed_in(account_app, clock):
+    """U4: signing out ends the session in this browser only, renewed or not."""
+    this_browser = sign_in(account_app).json()
+    renewed = renew(account_app, this_browser["refresh_token"]).json()
+    other_browser = sign_in(account_app).json()
+
+    sign_out(account_app, renewed, "local")
+
+    for token in (this_browser["refresh_token"], renewed["refresh_token"]):
+        assert_auth_error(renew(account_app, token), 400, "refresh_token_not_found")
+    assert renew(account_app, other_browser["refresh_token"]).status_code == 200
+
+
+def test_signing_out_others_keeps_this_browser(account_app, clock):
+    this_browser = sign_in(account_app).json()
+    other_browser = sign_in(account_app).json()
+
+    sign_out(account_app, this_browser, "others")
+
+    assert renew(account_app, this_browser["refresh_token"]).status_code == 200
+    assert_auth_error(
+        renew(account_app, other_browser["refresh_token"]), 400, "refresh_token_not_found"
+    )
+
+
+def test_signing_out_everywhere_ends_every_browser(account_app, clock):
+    this_browser = sign_in(account_app).json()
+    other_browser = sign_in(account_app).json()
+
+    sign_out(account_app, this_browser, "global")
+
+    for session in (this_browser, other_browser):
+        assert_auth_error(
+            renew(account_app, session["refresh_token"]), 400, "refresh_token_not_found"
+        )
+
+
 def test_signing_out_needs_a_valid_token(account_app):
     assert_auth_error(account_app.post("/api/local-auth/logout"), 403, "bad_jwt")
 

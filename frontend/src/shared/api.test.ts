@@ -119,3 +119,41 @@ test("a 401 tells the session it has ended once, and raises no error to toast", 
   expect(ended).toHaveBeenCalledTimes(1);
   expect(sentHeaders(3)).not.toHaveProperty("Authorization");
 });
+
+test("a late 401 for an earlier session leaves the session signed in since alone", async () => {
+  const replies: ((response: Response) => void)[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => new Promise<Response>((resolve) => replies.push(resolve))),
+  );
+  const earlier = signIn("earlier");
+  const first = api("/deals");
+  const second = api("/contacts");
+  await vi.waitFor(() => expect(replies).toHaveLength(2));
+
+  replies[0](new Response(null, { status: 401 }));
+  await vi.waitFor(() => expect(earlier.ended).toHaveBeenCalledTimes(1));
+  const later = signIn("later");
+  replies[1](new Response(null, { status: 401 }));
+
+  expect(await settled(Promise.any([first, second]))).toBe(false);
+  expect(later.ended).not.toHaveBeenCalled();
+});
+
+test("a 401 for a request that waited on an earlier session's token leaves the later session alone", async () => {
+  let giveToken: (token: string) => void = () => {};
+  const earlier = {
+    accessToken: () => new Promise<string>((resolve) => (giveToken = resolve)),
+    ended: vi.fn(),
+  };
+  onTestFinished(connectSession(earlier));
+  reply(401, {});
+  const request = api("/deals");
+
+  const later = signIn("later");
+  giveToken("earlier");
+
+  expect(await settled(request)).toBe(false);
+  expect(earlier.ended).not.toHaveBeenCalled();
+  expect(later.ended).not.toHaveBeenCalled();
+});
