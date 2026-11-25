@@ -145,8 +145,9 @@ Frontend unit tests sit next to the code they test. The rules for adding to this
 | Database migrations | Alembic |
 | API types for the frontend | openapi-typescript, generated from the backend's OpenAPI schema |
 | Sample data | Faker, with a fixed seed |
-
-The plan for this change names any library it needs for Postgres, checking tokens or talking to Supabase Auth, and makes the case for each, and this table gains a row for each one it adds.
+| Reaching Postgres | psycopg 3.3 (`psycopg[binary]`), SQLAlchemy's driver |
+| Checking tokens | PyJWT 2.15 (`pyjwt[crypto]`), with its key client for Supabase's published keys |
+| Signing in and keeping the session | `@supabase/auth-js` 2.119, the sign-in part of Supabase's client alone |
 
 ### Data model
 
@@ -172,7 +173,7 @@ The `today` date comes from the browser in an `X-Local-Date` header, so "late", 
 
 - Render runs one web service from `render.yaml` on the free plan. Its build installs the backend and frontend dependencies and builds the frontend. Its start command runs the backend on the port Render gives it, which runs the migrations and then serves the app (G13, G16).
 - The backend's allowed hosts (G6) are `127.0.0.1`, `localhost` and, on Render, the service's own address, which Render provides in `RENDER_EXTERNAL_HOSTNAME`.
-- `DATABASE_URL` is the Supabase project's session pooler connection string (Concern 23). The Render service and the Supabase project are in the same region, to keep each query quick.
+- `DATABASE_URL` is the Supabase project's session pooler connection string (Concern 23). The Render service and the Supabase project are in the same region, to keep each query quick: Oregon, for a Supabase project in US West.
 
 ### Testing
 

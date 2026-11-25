@@ -25,7 +25,7 @@ Three choices keep the parts apart:
 | `backend/migrations/env.py` | Runs against the database the mode chooses, not only the SQLite file; the command-line upgrade uses `app_engine()`. In offline mode it writes SQL with no database connection, for the `sqlalchemy.url` option or else the mode's database (TB45). | [W1.2](#w1-2) | Changed |
 | `backend/migrations/versions/0002_accounts_and_search.py` | Adds `users`, the four `created_by` and `updated_by` pairs and the three `search_name` columns, fills `search_name` for existing rows with Python's `casefold()`, and on Postgres turns on row level security for every table (CN21). It calls `casefold()` itself rather than importing `rules.search_key`, so the two must stay the same. Downgrading leaves row level security on, so the Data API stays shut. | [W1.2](#w1-2) | New |
 | `backend/migrations/versions/0003_search_name_collation.py` | On Postgres, gives the three `search_name` columns the "C" collation, so they sort by byte order as on SQLite (IC9); their indexes are rebuilt with it. Changes nothing on SQLite. Downgrading restores the default collation. | [W2.6](#w2-6) | New |
-| `pyproject.toml`, `uv.lock` | Adds `psycopg[binary]` and `pyjwt[crypto]` (see [New dependencies](#new-dependencies)) | [W1.1](#w1-1) | Changed |
+| `pyproject.toml`, `uv.lock` | Adds `psycopg[binary]` and `pyjwt[crypto]`, and in PH4 `pyyaml` as a dev dependency for TB58 (see [New dependencies](#new-dependencies)) | [W1.1](#w1-1), [W4.1](#w4-1) | Changed |
 | `backend/tests/test_config.py` | TB44 | [W1.1](#w1-1) | New |
 | `backend/tests/test_migrations.py` | TB45, and TB57 for migration 0003 | [W1.2](#w1-2), [W2.6](#w2-6) | Changed |
 | `backend/tests/test_db.py` | The new columns and indexes exist; `search_name` is required; removing a user empties `created_by` and `updated_by`; the Postgres engine has a small pool with pre-ping; `search_name` has the "C" collation on Postgres only | [W1.2](#w1-2), [W2.6](#w2-6) | Changed |
@@ -74,9 +74,10 @@ Three choices keep the parts apart:
 | `scripts/dev.mjs` | Starts the backend with local sign-in | [W1.7](#w1-7) | Changed |
 | `package.json` | Scripts `build`, `start` and `seed:supabase` | [W1.8](#w1-8), [W1.9](#w1-9) | Changed |
 | `.env.example` | The three setting names with no values | [W1.8](#w1-8) | New |
-| `render.yaml` | One free web service: build installs uv and the dependencies and builds the frontend; start runs `node scripts/start.mjs`; health check `/api/health`; the three settings with `sync: false` | [W4.1](#w4-1) | New |
+| `render.yaml` | One free web service on Render's Python runtime in the `oregon` region, beside the Supabase project (US West). Build: `pip install uv && uv sync --frozen && npm ci && npm run build`; start runs `node scripts/start.mjs`; health check `/api/health`. `PYTHON_VERSION` 3.12.14 and `NODE_VERSION` 24.22.1, since Render needs full versions; `UV_PROJECT_ENVIRONMENT=.venv-app`, so `uv sync` can't uninstall the uv that pip installed; the three settings with `sync: false` | [W4.1](#w4-1) | New |
+| `backend/tests/test_render_yaml.py` | TB58 | [W4.1](#w4-1) | New |
 | `backend/tests/test_serving.py` | TB53 | [W1.8](#w1-8) | New |
-| `backend/tests/test_hosts.py` | TB54 | [W1.7](#w1-7) | New |
+| `backend/tests/test_hosts.py` | TB54 | [W1.7](#w1-7), [W4.1](#w4-1) | New |
 | `backend/tests/test_seed_supabase.py` | TB55 | [W1.9](#w1-9) | New |
 | `backend/tests/test_startup.py` | TB56 | [W1.7](#w1-7) | New |
 
@@ -122,7 +123,7 @@ Three choices keep the parts apart:
 
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
-| `frontend/src/search/SearchBox.tsx` | F1 to F6: the box, the grouped results, keyboard use and the combobox roles. The input is `type="text"`, because Chrome's search input clears its text on Escape. A hidden status inside the search landmark reads the total as "N results", or the no-results text, and each group is named by `aria-label`. | [W2.4](#w2-4) | New |
+| `frontend/src/search/SearchBox.tsx` | F1 to F6: the box, the grouped results, keyboard use and the combobox roles. The input is `type="text"`, because Chrome's search input clears its text on Escape. A hidden status inside the search landmark reads the total as "N results", or the no-results text, and each group is named by `aria-label`. A change of path (not only of query string) clears the box and closes the results, a product owner's decision from TM17. | [W2.4](#w2-4) | New |
 | `frontend/src/search/useSearch.ts` | F7: waits for a 150 ms pause, keys each request by its text, and keeps showing the last results until newer ones arrive. Clearing the box forgets them, so text typed next shows nothing until its own reply. | [W2.4](#w2-4) | New |
 | `frontend/src/search/highlight.ts` | Finds the matching part of a name, ignoring case, for the bold. It copies Python's `casefold()` for ß, ς and ſ; rarer letters that only `casefold()` folds still match, but aren't bolded. | [W2.4](#w2-4) | New |
 | `frontend/src/search/search.css` | Search box and results styles, from tokens only | [W2.4](#w2-4) | New |
@@ -167,16 +168,18 @@ Three choices keep the parts apart:
 | `.claude/agents/ui-check.md` | Signs in as Test User on the filled-in local sign-in screen, and stops if the screen asks for a real password (IC8) | [W4.2](#w4-2) | Changed |
 | `AGENTS.md` | Lists `npm start` and `npm run seed:supabase`, and how ui-check signs in | [W4.2](#w4-2) | Changed |
 | `docs/changes/multi-user/plan.md` | Kept in step with the build | Every phase | Changed |
+| `.gitleaks.toml` | The allowlist skips what `.gitignore` ignores: `.env` and every `.env.<name>` except `.env.example`, which is committed and still scanned. Found in TM19, when a renamed `.env.off` failed the check. | [W4.2](#w4-2) | Changed |
 
 ### New dependencies
 
-IC15 allows a new dependency only when the plan makes the case. Three are needed:
+IC15 allows a new dependency only when the plan makes the case. Three are needed for the app, and a fourth, PyYAML, for one test only:
 
 | Dependency | Where | Why it's needed | Instead of |
 | --- | --- | --- | --- |
 | `psycopg[binary]` | Backend | SQLAlchemy needs a driver to reach Postgres. The binary wheels mean Render's build needs no compiler. | Nothing: there's no Postgres without a driver. |
 | `pyjwt[crypto]` | Backend | Checks the ES256 or RS256 signature on Supabase's tokens, with `PyJWKClient` fetching and keeping the project's keys. Getting signature checks wrong is a security hole, and checks like `alg` pinning, expiry and audience are what this library is for. Local tokens use the same library with a key made at start, so there's one way of checking. | Asking Supabase's `/auth/v1/user` about every request: no dependency, but a round trip to Supabase on every request (G7) and its rate limits. |
 | `@supabase/auth-js` | Frontend | Signs in, keeps the session and renews it before it expires. Supabase rotates the refresh token on each renewal, so two tabs renewing at once both use the same old token. auth-js 2.119 holds no lock across tabs by default (its `lock` option is deprecated); it relies on Supabase Auth's reuse interval, which renews a used refresh token again for 10 seconds by default ([R5](#r5)). This is the auth part of `supabase-js` alone, so the browser doesn't load database, storage and realtime clients that Accountable doesn't use. | Hand-written calls to Supabase Auth, which would have to re-create the session storage and the renewal timing. |
+| `pyyaml` | Backend, dev only | TB58 reads `render.yaml` as YAML to check the service it describes. PyYAML was already installed through `uvicorn[standard]`; declaring it means the test no longer depends on another package's extras. Added in PH4 ([W4.1](#w4-1)). | Checking `render.yaml`'s text line by line, which is weaker. |
 
 Not added: `python-dotenv` (Node's `process.loadEnvFile` reads `.env` in `scripts/settings.mjs`), an HTTP client for the backend, and a test timeout plugin (a hook in `conftest.py` and Vitest's `testTimeout` set the one-second limit).
 
@@ -185,6 +188,8 @@ Not added: `python-dotenv` (Node's `process.loadEnvFile` reads `.env` in `script
 Phases run in order, and each ends with `npm run check` passing and a note in `docs/STATUS.md`. Within a phase, parts run in parallel once what they need is in place; the Needs column says what that is. [PT6](#pt6) regenerates `api-types.ts` once the backend work of a phase is done, so frontend parts build against real types.
 
 ### Phases
+
+Status: complete. All four phases, every work item and every by-hand check (TM10 to TM19) are done; `docs/STATUS.md` has each phase's notes and the by-hand results.
 
 | Phase | Name | Parts | Done when |
 | --- | --- | --- | --- |
@@ -221,7 +226,7 @@ Phases run in order, and each ends with `npm run check` passing and a note in `d
 | <a id="w3-2"></a>W3.2 | [PH3](#ph3) | [PT7](#pt7) | `initials.ts` and `UserMenu.tsx` with the theme choice and signing out, which clears the cached queries and keeps the theme. | [W3.1](#w3-1) | U4, U11, U12, IC4 | None | [TF29](#tf29), [TF30](#tf30) |
 | <a id="w3-3"></a>W3.3 | [PH3](#ph3) | [PT6](#pt6) | Put the menu in the top bar, take the switch out of the sidebar and its styles out of `components.css`, and call `followDeviceTheme()` from `main.tsx`. | [W3.2](#w3-2) | U11, IC10 | None | [TF33](#tf33) |
 | <a id="w3-4"></a>W3.4 | [PH3](#ph3) | [PT10](#pt10) | TE36, TE37, the rewritten TE23 to TE29, and the menu in TE21. | [W3.3](#w3-3) | SC5 | [R17](#r17) | [TE21](#te21), [TE23](#te23) to [TE29](#te29), [TE36](#te36), [TE37](#te37) |
-| <a id="w4-1"></a>W4.1 | [PH4](#ph4) | [PT5](#pt5) | `render.yaml`; deploy it, enter the three settings in Render, and do TM14. Check which Host header Render's health check sends to `/api/health`: if it isn't the `onrender.com` host, the host check refuses it. | [PH3](#ph3) | G16, IC13, SC6 | [R9](#r9), [R19](#r19) | [TM14](#tm14) |
+| <a id="w4-1"></a>W4.1 | [PH4](#ph4) | [PT5](#pt5) | `render.yaml`; deploy it, enter the three settings in Render, and do TM14. Render's health check sends the service's `onrender.com` host as the Host header, which G6 already allows, so `/api/health` gets no exemption and G6 stays strict (the product owner's decision). | [PH3](#ph3) | G16, IC13, SC6 | [R9](#r9), [R19](#r19) | [TM14](#tm14) |
 | <a id="w4-2"></a>W4.2 | [PH4](#ph4) | [PT11](#pt11) | Update the docs and `ui-check.md`, do TM15 to TM19, run ui-check, and check every area file still matches what was built. | [W4.1](#w4-1) | SC1 to SC6, IC8 | None | [TM15](#tm15) to [TM19](#tm19) |
 
 ## Risks
@@ -246,7 +251,7 @@ Phases run in order, and each ends with `npm run check` passing and a note in `d
 | <a id="r16"></a>R16 | A secret ends up in the repo or a log: `DATABASE_URL` holds the database password | The database exposed | Settings live only in `.env` (git-ignored) and Render; nothing prints `DATABASE_URL`; signing keys are made at run time, never committed; gitleaks runs on every commit and push. If gitleaks flags the documented test password, ask before allowing it. | [W1.8](#w1-8), [W1.9](#w1-9) | gitleaks in `npm run check`, [TB44](#tb44) |
 | <a id="r17"></a>R17 | Making dark the default and adding System breaks the theme script's no-flash promise, or loses a saved choice | A flash of the wrong theme, or someone's light choice reset | The script stays inline in `<head>`; it reads the old `light` and `dark` values unchanged | [W3.1](#w3-1) | [TF31](#tf31), [TE25](#te25), [TE37](#te37) |
 | <a id="r18"></a>R18 | Supabase's dashboard can't set a display name when adding a person | Records show emails, and initials come from the email | Check in PH1. If the dashboard can't, the setup guide gives the SQL editor statement that sets it. | [W1.14](#w1-14) | [TM11](#tm11) |
-| <a id="r19"></a>R19 | Render's Python runtime lacks Node or uv for the build | The deploy fails | Install uv with pip in the build command and check Node is present on the first deploy; if it isn't, switch the service to the Node runtime and install uv there | [W4.1](#w4-1) | [TM14](#tm14) |
+| <a id="r19"></a>R19 | Render's Python runtime lacks Node or uv for the build | The deploy fails | Install uv with pip in the build command and check Node is present on the first deploy; if it isn't, switch the service to the Node runtime and install uv there. Closed: the service uses the Python runtime, and Render's docs say Node and npm exist on every native runtime, with `NODE_VERSION` choosing the version. `UV_PROJECT_ENVIRONMENT` keeps the app's packages apart from the environment that holds uv. | [W4.1](#w4-1) | [TM14](#tm14) |
 
 ## Proof
 
@@ -266,10 +271,11 @@ Phases run in order, and each ends with `npm run check` passing and a note in `d
 | <a id="tb51"></a>TB51 | `test_search.py` | `search_name` is set on adding and renaming an organization, contact and deal, and by the seed | F2, CN20 | [R14](#r14) |
 | <a id="tb52"></a>TB52 | `test_search.py` | Search finds by part of a name in any case, "élan" finds "Élan Studio", spaces at the ends are ignored, `%` and `_` match only themselves, names starting with the text come first then alphabetical, at most 5 per group with the full count, and it needs sign-in | F2, F3, IC9, SC4 | [R14](#r14) |
 | <a id="tb53"></a>TB53 | `test_serving.py` | With a built frontend in a temporary folder, its files are served by path, `/deals/12` gets `index.html`, and an unknown `/api` path still gets the JSON 404 | G13 | None |
-| <a id="tb54"></a>TB54 | `test_hosts.py` | The Render host is answered when `RENDER_EXTERNAL_HOSTNAME` names it, and any other host is refused, as before | G6 | None |
+| <a id="tb54"></a>TB54 | `test_hosts.py` | The Render host is answered when `RENDER_EXTERNAL_HOSTNAME` names it, and any other host is refused, as before; `/api/health` answers 200 to the Render host, as Render's health check sends it; an unknown host gets 400 on `/api/health`, `/api/config`, `/api/organizations` and `/deals/12` | G6, G16 | None |
 | <a id="tb55"></a>TB55 | `test_seed_supabase.py` | Against a temporary database, it shows the counts; any answer but "yes" leaves the data as it was; "yes" loads the sample data and keeps `users` | G15, IC6 | [R16](#r16) |
 | <a id="tb56"></a>TB56 | `test_startup.py` | With local sign-in, a missing SQLite file is created and seeded; in Supabase mode the database is migrated and never seeded; local sign-in won't start when `RENDER` is set; `npm run seed` loads the SQLite file even with `DATABASE_URL` set | G4, G5, IC6 | [R1](#r1) |
 | <a id="tb57"></a>TB57 | `test_migrations.py`, `test_db.py` | Migration 0003, generated as SQL for Postgres, gives each `search_name` the "C" collation and its downgrade takes it away; on SQLite it changes nothing and keeps the data; the tables declare the collation for Postgres only | IC9, F3 | [R6](#r6) |
+| <a id="tb58"></a>TB58 | `test_render_yaml.py` | `render.yaml` is one free web service that builds the frontend, starts with `node scripts/start.mjs` and is checked at `/api/health`; it names the three settings with `sync: false` and no values, and never sets `ACCOUNTABLE_SIGN_IN` | G16, IC13 | [R1](#r1), [R16](#r16) |
 
 ### Frontend unit tests (Vitest)
 
@@ -280,7 +286,7 @@ Phases run in order, and each ends with `npm run check` passing and a note in `d
 | <a id="tf24"></a>TF24 | `account/SignInPage.test.tsx` | The form signs in; a wrong password gives U2's message and keeps the email but not the password; an unreachable sign-in gives its message; local sign-in shows the note with the fields filled in; there's no sign-up or reset link | U2, U3, U7, IC3, G8 | None |
 | <a id="tf25"></a>TF25 | `account/SessionGate.test.tsx` | Signed out, any address shows the sign-in screen and then opens that address once signed in; when the session ends, the sign-in screen says so and returns to the same page | U1, U3, CN19 | [R12](#r12) |
 | <a id="tf26"></a>TF26 | `shared/Authorship.test.tsx`, the three record page tests, `activities/Timeline.test.tsx` | Each record page shows who added and last changed it, with dates; "Sample data" for sample records; dates as `16 Nov 2026`; timeline activities show who added them | U9, U10, G10 | None |
-| <a id="tf27"></a>TF27 | `search/SearchBox.test.tsx` | One request per pause in typing; an older reply never replaces newer results; text typed after clearing the box never shows the cleared text's results; groups in order with "N more" lines; no-results text; arrows, Enter and Escape; clicking a result opens it and clears the box; combobox and listbox roles | F1, F3 to F7 | [R15](#r15) |
+| <a id="tf27"></a>TF27 | `search/SearchBox.test.tsx` | One request per pause in typing; an older reply never replaces newer results; text typed after clearing the box never shows the cleared text's results; going to another page (a new path, not only a new query string) clears the box and closes the results; groups in order with "N more" lines; no-results text; arrows, Enter and Escape; clicking a result opens it and clears the box; combobox and listbox roles | F1, F3 to F7 | [R15](#r15) |
 | <a id="tf28"></a>TF28 | `search/highlight.test.ts` | The bold part is found in any case, including accented letters, and nothing is bolded when the match can't be placed | F4 | None |
 | <a id="tf29"></a>TF29 | `account/initials.test.ts` | "Jane Smith" gives JS, "Jane van der Berg" JB, "Cher" C, no name the email's first letter, always in capitals | U11 | None |
 | <a id="tf30"></a>TF30 | `account/UserMenu.test.tsx` | The circle's name for screen readers, with the email when there's no name; the menu shows the name and email; it opens with a click, Enter or Space, moves with the arrows into the theme choices, and Escape or Tab closes it and puts focus back; a click outside closes it, with focus back on the circle unless the click landed in a field; choosing a theme keeps it open; signing out clears the cached data, shows the sign-in screen and keeps the theme | U4, U11, U12 | None |

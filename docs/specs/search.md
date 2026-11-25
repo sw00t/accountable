@@ -32,10 +32,10 @@ Organizations, contacts and deals each have a `search_name` column (text, requir
 
 ### Screens
 
-**Search box.** On the left of the top bar, 400 px wide, on the panel color with a Lucide search icon inside its left edge. The results open under it in a panel 480 px wide with 12 px rounded corners and the usual shadow. Each group has its name as a 13 px label in secondary text, and each result has its section's sidebar icon, the name in 14 px and the second line in 13 px secondary text. The highlighted result has the hover tint.
+**Search box.** On the left of the top bar, 400 px wide, on the panel color with a Lucide search icon inside its left edge. The results open under it in a panel 480 px wide with 12 px rounded corners and the usual shadow. Each group has its name as a 13 px label in secondary text, and each result has its section's sidebar icon, the name in 14 px and the second line in 13 px secondary text. The highlighted result has the hover tint. With many matches the panel's height is capped, and it scrolls inside.
 
 A deal's second line is its organization and stage separated by a middle dot ("Garcia Freight · Proposal"), or only the stage when it has no organization. An organization with no industry, or a contact with no organization, has no second line.
 
-Nothing is highlighted until an arrow key is pressed. Down and Up wrap around the list, Up with nothing highlighted goes to the last result, and Down opens the results again after Escape. Enter with nothing highlighted does nothing. Escape closes the results and keeps the typed text. Moving focus away from the box closes the results, and focusing it again opens them.
+Nothing is highlighted until an arrow key is pressed. Down and Up wrap around the list, Up with nothing highlighted goes to the last result, and Down opens the results again after Escape. Enter with nothing highlighted does nothing. Escape closes the results and keeps the typed text. Going to another page, through a sidebar link, the back button or any other way, clears the box and closes the results; a change only to the address's query, such as a table filter, doesn't count as another page. Moving focus away from the box closes the results, and focusing it again opens them.
 
 When a search fails, the results panel says "Couldn't search." followed by the usual detail (G8). For screen readers (F6), a hidden status reads the total number of matches as "N results", or the no-results text, and each group is named.

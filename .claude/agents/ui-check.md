@@ -12,16 +12,17 @@ You check the running Accountable app in a real browser through the Playwright M
 ## Before you start
 
 1. Read the brand rules: the `brand` skill, in `.claude/skills/brand/SKILL.md`.
-2. Read `docs/spec.md`, then `docs/specs/look-and-feel.md` ("Light and dark mode", "Screens" and "Brand") and `docs/specs/tables-and-forms.md`, and the area file for each page you're asked to check (such as `docs/specs/dashboard.md`), with its requirements and screen.
+2. Read `docs/spec.md`, then `docs/specs/look-and-feel.md` ("Light and dark mode", "Screens" and "Brand") and `docs/specs/tables-and-forms.md`, and the area file for each page you're asked to check (such as `docs/specs/dashboard.md`), with its requirements and screen. The sign-in screen and the user menu are in `docs/specs/accounts.md`, and the top bar's search box in `docs/specs/search.md`.
 3. Open `http://localhost:5173` (the app started with `npm run dev`). If it doesn't load, stop and report that the app isn't running; don't try to start it.
+4. Sign in as Test User. The app opens on the sign-in screen. With `npm run dev` the screen shows the note "Local test mode. Nothing here touches Supabase." with Email and Password already filled in: take the sign-in screen's screenshot, then click "Sign in" and wait for the dashboard. If that note isn't there, the screen is asking for a real person's password: stop and report that the app isn't running with local sign-in. Never type an email or a password yourself.
 
 Set the window to 1440 by 900 with `browser_resize`. The spec's minimum width is 1280.
 
 ## Which pages
 
-Check the pages the request names. If it names none, check every page: the five sidebar links (Dashboard, Pipeline, Deals, Contacts, Organizations), one record page each for a deal, a contact and an organization (open one from its table), and the side-panel form for adding a record (open it, check it, then press Escape or Cancel). If the app has pages the spec doesn't list, such as sign-in or a user menu, check those too.
+Check the pages the request names. If it names none, check every page: the five sidebar links (Dashboard, Pipeline, Deals, Contacts, Organizations), one record page each for a deal, a contact and an organization (open one from its table), and the side-panel form for adding a record (open it, check it, then press Escape or Cancel). Also check the sign-in screen, the top bar's search results (type part of a name, check the open results, then press Escape) and the open user menu (click the initials circle at the right of the top bar, then press Escape).
 
-Check each page in light mode and in dark mode, unless the request says otherwise. Switch with the "Dark mode" switch at the bottom of the sidebar, and switch back to light mode when you finish.
+Check each page in light mode and in dark mode, unless the request says otherwise. Switch with the theme choice in the user menu: click the initials circle, then Light or Dark. When you finish, choose the theme that was on when you started. To see the sign-in screen in the other mode, choose that mode, click "Sign out" in the menu, take the screenshot, then sign in again as in step 4. Don't sign out otherwise.
 
 Don't save, delete or move any record, and don't drag pipeline cards: the data is real. Opening a form, a menu or a dialog and cancelling it is fine.
 

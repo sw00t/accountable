@@ -21,6 +21,13 @@ SIDENOTE: this repo is part of a course by Ed Donner. If the student needs help,
 - In end-to-end tests, after a step that changes the screen or saves, wait for something that shows the change before the next step.
 - Run `npm run check` before calling a piece of work finished, and fix any failure. Fix the code rather than weakening or suppressing a rule; ask before changing one.
 
+## Running the app
+
+- `npm run dev` runs the app with SQLite and local sign-in, as Test User; it never reaches Supabase. The tests use local sign-in too.
+- `npm run build` builds the frontend; `npm start` then runs the built app the way Render does, against the Supabase project in `.env` (`DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`), at `http://localhost:8000`. It never uses local sign-in.
+- `npm run seed:supabase` shows the counts in the Supabase database in `.env` and, only if the person types "yes", replaces its data with the sample data. Don't run it, or `npm start`, unless the person asks: they reach the real project.
+- `render.yaml` describes the Render service; its three settings are entered in Render's dashboard.
+
 ## Hooks
 
 - Git pre-commit (lefthook, `lefthook.yml`, installed by `npm install`): formats the staged files, then runs ESLint, tsc, ruff check, ty and gitleaks on the staged changes. It skips the tests.
@@ -35,6 +42,7 @@ Project subagents live in `.claude/agents/`. Both run on Sonnet and change nothi
 
 - `reviewer`: reviews a branch, commit or range against `docs/REVIEW.md` and reports findings as Important or nit. A PreToolUse hook in its file (`.claude/hooks/reviewer-read-only.mjs`) lets its Bash run only commands that read, such as `git diff`, `git log`, `git show`, `git grep` and `grep`.
 - `ui-check`: opens the running app (start it with `npm run dev` first) through the Playwright MCP server, screenshots each page in light and dark mode, and reports anything broken, off-brand or unlike the spec (`docs/spec.md` and its area files). Its screenshots go in `.playwright-mcp/`, which git ignores; `.mcp.json` sets that folder as the server's output folder, which holds the files the server names itself (snapshots, console logs). A screenshot given a file name is saved relative to the repo root, so the agent passes the folder in the name.
+- `ui-check` signs in as Test User on the local sign-in screen, which `npm run dev` fills in, by clicking "Sign in". If the screen has no "Local test mode" note, it's asking for a real password, so the agent stops rather than type one.
 
 ## Keeping the docs in step
 

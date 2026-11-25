@@ -6,7 +6,11 @@ useDefault = true
 [allowlist]
 description = "Git-ignored files"
 paths = [
-  '''(^|/)\.env$''',
+  # Matches .gitignore: skips .env and every .env.<name> (.env.local, .env.off,
+  # .env.examples and so on), but not .env.example, which is committed and scanned.
+  # Go's regular expressions have no lookahead, so each way a name can differ from
+  # "example" is spelled out: a shorter prefix of it, a different letter, or more after it.
+  '''(^|/)\.env(\.([^e/][^/]*|e([^x/][^/]*)?|ex([^a/][^/]*)?|exa([^m/][^/]*)?|exam([^p/][^/]*)?|examp([^l/][^/]*)?|exampl([^e/][^/]*)?|example[^/]+)?)?$''',
   '''(^|/)node_modules/''',
   '''(^|/)\.venv/''',
   '''(^|/)\.git/''',

@@ -1,6 +1,6 @@
 // TF27: the top bar's search box (F1, F3 to F7, R15).
 import { act, fireEvent, screen, within } from "@testing-library/react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Link, Route, Routes, useLocation } from "react-router-dom";
 import { renderSignedIn } from "../shared/test-utils";
 import { SearchBox } from "./SearchBox";
 import { PAUSE_MS, type SearchResults } from "./useSearch";
@@ -57,7 +57,12 @@ function stubSearch(answers: Record<string, SearchResults> = {}) {
 }
 
 function Where() {
-  return <p>At {useLocation().pathname}</p>;
+  return (
+    <>
+      <p>At {useLocation().pathname}</p>
+      <Link to="/pipeline">Pipeline</Link>
+    </>
+  );
 }
 
 function renderBox() {
@@ -245,6 +250,20 @@ test("text typed after clearing the box never shows the cleared text's results",
     organizations: { items: [{ id: 5, name: "Heath Labs", industry: null }], total: 1 },
   });
   expect(optionNames()).toEqual(["Heath Labs"]);
+});
+
+test("going to another page clears the box and closes the results", async () => {
+  stubSearch({ garcia: GARCIA });
+  const box = renderBox();
+  await typeAndPause(box, "garcia");
+  expect(screen.getByRole("listbox")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("link", { name: "Pipeline" }));
+  expect(screen.getByText("At /pipeline")).toBeInTheDocument();
+  expect(box).toHaveValue("");
+  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  fireEvent.focus(box);
+  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
 });
 
 test("the arrow keys move through the results, and Enter opens one and clears the box", async () => {

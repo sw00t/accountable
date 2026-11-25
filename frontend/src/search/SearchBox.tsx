@@ -1,5 +1,5 @@
 import { useId, useState, type KeyboardEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Building2, DollarSign, Search, User, type LucideIcon } from "lucide-react";
 import { failureMessage } from "../shared/api";
 import { plural } from "../shared/format";
@@ -92,6 +92,13 @@ export function SearchBox() {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const { pathname } = useLocation();
+  const [page, setPage] = useState(pathname);
+  if (pathname !== page) {
+    // A new page starts with an empty box, however the person got there.
+    setPage(pathname);
+    clear();
+  }
   const { found, error } = useSearch(text);
 
   const groups = found ? groupsOf(found.results) : [];
@@ -101,10 +108,14 @@ export function SearchBox() {
   const showing = open && (found !== null || error !== null);
   const expanded = showing && results.length > 0;
 
-  function choose(result: Result) {
+  function clear() {
     setText("");
     setOpen(false);
     setActiveKey(null);
+  }
+
+  function choose(result: Result) {
+    clear();
     navigate(result.path);
   }
 

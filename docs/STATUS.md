@@ -119,7 +119,24 @@ node --env-file=.env -e 'fetch(process.env.SUPABASE_URL+"/rest/v1/organizations?
 
 ### Deploy to Render
 
-To be written in PH4, once the app is running on Render.
+Render runs Accountable on the web for your team, from the settings in `render.yaml`, on its free plan. Do the steps above first: Render uses the same Supabase project and the same three settings.
+
+1. **Push the branch.** Render builds from GitHub, so the code you want to run must be pushed. Make sure `render.yaml` is in it.
+   *Check:* the branch on GitHub shows `render.yaml` at the top level.
+2. **Create the service from the Blueprint.** At [render.com](https://render.com), sign in, click **New**, then **Blueprint**. The first time, Render asks to install its GitHub App: choose **Only select repositories** and pick the Accountable repository. Click **Connect** beside the repository. The Blueprint form that opens has a **Branch** dropdown, which starts on `main`: choose the branch to deploy from. Render reads `render.yaml` and shows one web service, `accountable`, on the free plan in Oregon (the same region as a US West Supabase project).
+   *Check:* the Blueprint shows exactly one service, and asks for three settings.
+3. **Enter the three settings.** Render asks for `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`: copy each value from your `.env`. Render asks only this once. To change one later, open the service's **Environment** page. Never add `ACCOUNTABLE_SIGN_IN`: Accountable refuses to start with local sign-in on Render.
+   *Check:* all three are filled in before you apply.
+4. **Apply, and watch the build.** Click **Apply**. Open the service's **Logs** while it builds: it installs Python 3.12.14, Node 24.22.1 and uv, then the packages, then runs `npm run build`. This takes a few minutes the first time.
+   *Check:* the log ends the build without an error, then shows the database migrations running and Uvicorn starting. The service shows as **Live** and its health check is green.
+5. **Open it.** The service's page shows its address, ending in `onrender.com`. Send that address to your team.
+   *Check:* the address opens the sign-in screen with no "Local test mode" note, and a person you added in step 5 of "Set up Supabase" can sign in.
+
+Each later push to that branch deploys again by itself.
+
+**What to expect on the free plans:** Render's free service stops after 15 minutes with no visits, and the next visit waits about a minute while it starts again. A free Supabase project pauses after a week with no use; restore it from Supabase's dashboard, then reload Accountable.
+
+The by-hand checks of the deployed app are in the PH4 note under "Sign-in, search and a user menu" below.
 
 ## For developers
 
@@ -480,7 +497,7 @@ The user set up the Supabase project following the guide at the top of this file
 | TM12 Data API shut (CN21) | Done. Supabase's Security Advisor shows no table without row level security, and a Data API request with the publishable key returns `[]`. |
 | TM13 `npm run seed:supabase` | Done. The first run on the new project showed zero counts and was answered yes. Later runs showed the sample counts, and answering no, twice, left them unchanged. |
 
-Still open, for later phases: `test_performance.py::test_full_size_within_budget` failed once while other agents were running tests, and passed on its own. Worth watching in TM18.
+Still open, for later phases: `test_performance.py::test_full_size_within_budget` failed once while other agents were running tests, and passed on its own. Worth watching in TM18. (Since checked in TM18: it takes 0.32 s on its own.)
 
 ### PH2 Search: done
 
@@ -497,9 +514,7 @@ SC4 is met: the search box in the top bar finds an organization, a contact and a
 
 Checked on Supabase: after the user's `npm run build` and `npm start` applied migration 0003 there, "gArCiA" found Garcia Freight, Sabrina Garcia and the two Garcia deals, and the arrow keys and Enter opened one.
 
-Still open, for PH4:
-
-- Check which Host header Render's health check sends to `/api/health`. If it isn't the `onrender.com` host, the host check refuses it.
+For PH4, the Host header Render's health check sends was checked: it's the `onrender.com` host, which G6 allows (see PH4).
 
 ### PH3 User menu: built
 
@@ -513,8 +528,46 @@ Still open, for PH4:
 - **Spec gaps filled in U12:** Tab closes the menu like Escape; choosing a theme keeps it open; the circle's name uses the email when there's no display name.
 - **Tests:** `npm run check` passes in full: backend 476 passed, frontend 537 unit tests in 39 files (ThemeSwitch's tests deleted), end-to-end 56 passed. PT10 added TE36 and TE37, rewrote TE23 to TE29 for the menu's theme choice, and TE21 now walks the open menu.
 
+### PH4 Render and finish: done
+
+- **Render (PT5):** `render.yaml` describes one free web service in Oregon, beside the Supabase project in US West, on Render's Python runtime. Its build is `pip install uv && uv sync --frozen && npm ci && npm run build`, and it starts with `node scripts/start.mjs`, which migrates the database and serves the app. `PYTHON_VERSION` 3.12.14 and `NODE_VERSION` 24.22.1 are pinned, since Render needs full versions. `UV_PROJECT_ENVIRONMENT=.venv-app` keeps the app's packages apart from the environment pip installed uv into, so syncing can't remove uv. The three settings are named with no values; `ACCOUNTABLE_SIGN_IN` is never set. TB58 (`test_render_yaml.py`) checks all of this.
+- **Host check:** the product owner kept G6 strict, with no exemption for `/api/health`. Render's health check sends the service's `onrender.com` address as its Host header, which G6 already allows, and TB54 now checks `/api/health` answers it.
+- **R19 closed:** Render's docs say Node and npm are on every native runtime, so the Python runtime builds the frontend too.
+- **Docs (PT11, W4.2):** `platform.md`'s libraries table gains psycopg, PyJWT and `@supabase/auth-js`, and its deployment notes name the region. `TECH_STACK.md` describes Supabase and Render as they are, no longer "later". `ui-check.md` signs in as Test User on the filled-in local sign-in screen, stops if the screen asks for a real password, checks the sign-in screen, search results and the user menu, and switches theme through the menu. `AGENTS.md` gains "Running the app" (`npm run build`, `npm start`, `npm run seed:supabase`) and how ui-check signs in. The setup guide above gains "Deploy to Render".
+- **Tests:** the final `npm run check` passes in full: backend 486 passed, frontend 538 unit tests in 39 files, end-to-end 56 passed.
+
+#### By-hand checks
+
+Deployed from the Blueprint on the `multi-user` branch. The service is live at https://accountable-q9l3.onrender.com.
+
+| Check | Status |
+| --- | --- |
+| TM14 Deploy from `render.yaml` and use it on Render | Done. After the service had slept, the next visit woke it and the app worked. The user signed in as themselves, opened each page, added and edited a record, reloaded, and the change was kept. The public endpoints answer as they should: `/api/health` gives 200 `{"status":"ok"}`; `/api/config` gives Supabase mode with only the URL and publishable key; `/api/local-auth/user` is 404, so local sign-in isn't there (R1); `/api/organizations` without a token gives 401 "Sign in to use Accountable."; and a fresh load of `/deals/1` serves the app. |
+| TM15 Two people, two browsers, and two tabs for over an hour | Done. Two people in two browsers on Render were each credited for their own changes, and one person's two tabs stayed signed in for over an hour (R5). |
+| TM16 G7 and F7 at full size, locally and on Render | Done. Pages and search were quick locally, and on Render once it was awake. |
+| TM17 ui-check of the new screens in light and dark | Done, with the user. Nothing broken; the only console errors were the two expected 400s from deliberate wrong-password tries (G11). All the new small text meets M5: secondary text 4.60:1 in light (the closest to 4.5) and 8.30:1 in dark, the local note 7.46:1, the sign-in error 5.7:1 in light and 9.75:1 in dark, and Midnight on Sea Green 6.40:1. A sample record's foot read "Added by Sample data on 2 Jul 2026"; a real name is covered by TE34, TM10 and TM11. Screenshots in `.playwright-mcp/` (git-ignored): `signin`, `signin-wrong-password`, `dashboard-topbar`, `deal-record`, `search-garcia`, `search-noresults`, `search-more` and `user-menu`, each in `-light` and `-dark`. Two findings went to the product owner: the dark panels' edges (left as the brand says, see Ideas for later) and the search box keeping its text after the page changes (now cleared whenever the path changes, with `search.md` and TF27 updated). |
+| TM18 Slowest unit tests under a second (IC14) | Done. Backend: the slowest is 0.45 s (the setup of `test_rules.py::test_a_probability_typed_in_on_a_new_deal_wins[new]`); `test_full_size_within_budget` takes 0.32 s. Frontend: the slowest is 455 ms (`api-types.test.ts`, which has its own 60 s timeout), then 218 ms, and the other 535 are under 220 ms. Under load from other test runs, 3 frontend tests hit the 1 s limit (ContactsPage Delete, OrganizationsPage Edit, PipelinePage Space-move); run on their own 3 times, all 27 tests in those files passed. CI's limit is 10 s. |
+| TM19 `npm run check` with `.env` filled in, removed, and with the network off | Done, passing in all three. With `.env` filled in: the user's own `npm run check` passed. With the network off: Wi-Fi can't be turned off here, so the lead ran it inside macOS `sandbox-exec` with every outbound connection refused except to localhost and local sockets (a `curl` to example.com inside it was refused), and it passed with backend 486, frontend 538 and end-to-end 56. With `.env` removed: the user moved it out of the repo for the run, and it passed. A first try that renamed it inside the repo to `.env.off` failed only gitleaks's working-tree scan, since the real keys sat in a file `.gitleaks.toml` didn't skip; its allowlist now matches `.gitignore` (see below). The commands are under the table. |
+
+How TM19 was run, from the repo root. Network off, with a sandbox that refuses every outbound connection except to this computer:
+
+```sh
+sandbox-exec -p '(version 1)(allow default)(deny network-outbound)(allow network-outbound (remote ip "localhost:*"))(allow network-outbound (remote unix-socket))' npm run check
+```
+
+`.env` removed, by moving it out of the repo and back afterwards:
+
+```sh
+mv .env ../accountable.env.off && npm run check; mv ../accountable.env.off .env
+```
+
+- **gitleaks allowlist (PT11):** `.gitleaks.toml` skipped only `.env`, so a renamed copy such as `.env.off` was scanned and its real keys failed the check. With the user's approval it now skips what `.gitignore` ignores: `.env` and every `.env.<name>`, except `.env.example`, which is committed and still scanned. Go's regular expressions have no lookahead, so the pattern spells out every name other than `example`, and a comment says what it matches. Tested with fake keys in a scratch folder: gitleaks's own rules flagged all eight test files, and with the repo's config only `.env.example` was reported, while `.env.off`, `.env.examples`, `.env.local`, `.env.exampl`, `.env.e`, `.env.` and `.env.xample` were skipped. `git check-ignore` treats the same eight names the same way. The scratch folder is deleted, and `gitleaks dir .` reports no leaks.
+
+The multi-user change is complete: every phase, work item and by-hand check is done.
+
 ## Ideas for later
 
 - The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.
 - The "Dark mode" switch takes more sidebar space than it needs; make it a small icon that toggles dark mode on and off. Done in multi-user PH3: the switch was replaced by the theme choice in the user menu.
 - Hide people's emails where they have no display name, rather than showing the email in "Added by" and "Last changed by" (U9 shows the email today). This changes the spec, so it belongs in a later change, not multi-user.
+- In dark mode, the search results panel and the user menu are black over black cards, so their edges almost disappear (found in TM17). Left as the brand says for now; a possible brand tweak, such as a lighter panel or a stronger shadow for floating panels in dark mode.
