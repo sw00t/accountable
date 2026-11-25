@@ -23,6 +23,7 @@ from app.routers import (
     deals,
     health,
     organizations,
+    search,
     timeline,
 )
 from app.schemas import MESSAGES, FieldErrors, NotFound
@@ -104,7 +105,7 @@ app.include_router(health.router, prefix=API)
 app.include_router(account.router, prefix=API)
 if config.settings().local:
     app.include_router(account.local_auth, prefix=API)
-for module in (organizations, contacts, deals, activities, timeline, dashboard):
+for module in (organizations, contacts, deals, activities, timeline, dashboard, search):
     app.include_router(module.router, prefix=API, dependencies=SIGNED_IN)
 
 if config.testing():

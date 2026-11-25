@@ -222,8 +222,8 @@ def test_0002_upgrades_a_database_with_data(db_path):
     assert "users" in inspect(engine).get_table_names()
 
 
-def test_0002_as_postgres_sql_turns_on_row_level_security_for_every_table():
-    """CN21: with no policies, row level security shuts out Supabase's Data API."""
+def _postgres_sql(revisions: str, downgrade: bool = False) -> str:
+    """The SQL the migrations would run on Postgres, made without a database."""
     import io
 
     from alembic import command
@@ -234,10 +234,53 @@ def test_0002_as_postgres_sql_turns_on_row_level_security_for_every_table():
     output = io.StringIO()
     cfg = Config(str(REPO_ROOT / "alembic.ini"), output_buffer=output)
     cfg.set_main_option("sqlalchemy.url", "postgresql+psycopg://")
-    command.upgrade(cfg, "0001:head", sql=True)
-    sql = output.getvalue()
+    run = command.downgrade if downgrade else command.upgrade
+    run(cfg, revisions, sql=True)
+    return output.getvalue()
+
+
+def test_0002_as_postgres_sql_turns_on_row_level_security_for_every_table():
+    """CN21: with no policies, row level security shuts out Supabase's Data API."""
+    sql = _postgres_sql("0001:0002")
 
     tables = [*metadata.tables, "alembic_version"]
     assert len(tables) == 7
     for table in tables:
         assert f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;" in sql
+
+
+NAMED_TABLES = ("organizations", "contacts", "deals")
+
+
+def test_0003_as_postgres_sql_sorts_search_name_by_byte_order():
+    """IC9: Postgres orders search_name as SQLite does."""
+    upgrade = _postgres_sql("0002:0003")
+    downgrade = _postgres_sql("0003:0002", downgrade=True)
+    for table in NAMED_TABLES:
+        alter = f"ALTER TABLE {table} ALTER COLUMN search_name TYPE"
+        assert f'{alter} VARCHAR COLLATE "C";' in upgrade
+        assert f"{alter} VARCHAR;" in downgrade
+
+
+def _sqlite_schema(engine) -> list[tuple[str, str]]:
+    with engine.connect() as conn:
+        return conn.exec_driver_sql(
+            "SELECT name, sql FROM sqlite_master WHERE sql IS NOT NULL ORDER BY name"
+        ).all()
+
+
+def test_0003_changes_nothing_on_sqlite(db_path):
+    from app.db import engine_for
+
+    engine = engine_for(db_path.resolve())
+    _upgrade_to(engine, "0001")
+    _add_0001_rows(engine)
+    _upgrade_to(engine, "0002")
+    before = _sqlite_schema(engine)
+    _upgrade_to(engine, "0003")
+    with engine.connect() as conn:
+        version = conn.exec_driver_sql("SELECT version_num FROM alembic_version").scalar()
+        names = conn.execute(select(organizations.c.search_name).order_by(organizations.c.id))
+        assert names.scalars().all() == ["élan studio", "grosse strasse gmbh"]
+    assert version == "0003"
+    assert _sqlite_schema(engine) == before

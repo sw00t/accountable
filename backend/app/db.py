@@ -61,8 +61,11 @@ def _authorship() -> list[Column]:
 
 def _search_name() -> Column:
     """The name as rules.search_key makes it, for search that ignores case (Concern 20).
-    Required, so a write path that forgets it fails (R14)."""
-    return Column("search_name", String, nullable=False, index=True)
+    Required, so a write path that forgets it fails (R14).
+    On Postgres it sorts by byte order, like SQLite, since a language collation skips
+    spaces and would order "bankside" before "banks ltd" (IC9)."""
+    search_text = String().with_variant(String(collation="C"), "postgresql")
+    return Column("search_name", search_text, nullable=False, index=True)
 
 
 users = Table(

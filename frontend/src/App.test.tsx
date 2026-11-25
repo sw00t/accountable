@@ -1,5 +1,6 @@
 // The app's frame: the sidebar takes you to each section, and a bad link says so.
 // TF22: a refused session reaches the session gate once, with no toasts.
+// TF33: every page has the top bar with the search box.
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { list, mockApi, organizationRow, renderApp } from "./shared/test-utils";
@@ -56,5 +57,27 @@ test("a refused session tells the gate once and raises no toast", async () => {
   await userEvent.click(screen.getByRole("link", { name: "Organizations" }));
   expect(await screen.findByRole("heading", { name: "Organizations" })).toBeInTheDocument();
   expect(ended).toHaveBeenCalledTimes(1);
-  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  expect(screen.queryByText(/Sign in to use Accountable|Couldn't/)).not.toBeInTheDocument();
+});
+
+/** The page's banner. Testing Library counts every header, but a browser skips one inside `main`. */
+const topBar = () => screen.getAllByRole("banner").find((banner) => !banner.closest("main"))!;
+
+test.each([
+  "/",
+  "/pipeline",
+  "/deals",
+  "/deals/5",
+  "/contacts",
+  "/contacts/7",
+  "/organizations",
+  "/organizations/2",
+  "/no-such-page",
+])("%s has the top bar with the search box", (path) => {
+  mockApi({});
+  renderApp(path);
+  expect(within(topBar()).getByRole("combobox", { name: "Search" })).toHaveAttribute(
+    "placeholder",
+    "Search organizations, contacts and deals",
+  );
 });

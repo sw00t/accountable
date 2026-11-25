@@ -336,6 +336,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search
+         * @description F3: results start at one character, so blank text finds nothing.
+         */
+        get: operations["search_api_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -529,6 +549,22 @@ export interface components {
             total: number;
             status_counts: components["schemas"]["StatusCounts"];
         };
+        /** ContactResult */
+        ContactResult: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Organization Name */
+            organization_name: string | null;
+        };
+        /** ContactResults */
+        ContactResults: {
+            /** Items */
+            items: components["schemas"]["ContactResult"][];
+            /** Total */
+            total: number;
+        };
         /** ContactRow */
         ContactRow: {
             /** Id */
@@ -652,6 +688,27 @@ export interface components {
             before_id?: number | null;
             /** After Id */
             after_id?: number | null;
+        };
+        /** DealResult */
+        DealResult: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Organization Name */
+            organization_name: string | null;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "new" | "qualified" | "proposal" | "negotiation" | "won" | "lost";
+        };
+        /** DealResults */
+        DealResults: {
+            /** Items */
+            items: components["schemas"]["DealResult"][];
+            /** Total */
+            total: number;
         };
         /** DealRow */
         DealRow: {
@@ -892,6 +949,22 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** OrganizationResult */
+        OrganizationResult: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Industry */
+            industry: string | null;
+        };
+        /** OrganizationResults */
+        OrganizationResults: {
+            /** Items */
+            items: components["schemas"]["OrganizationResult"][];
+            /** Total */
+            total: number;
+        };
         /** OrganizationRow */
         OrganizationRow: {
             /** Id */
@@ -968,6 +1041,15 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+        };
+        /**
+         * SearchResults
+         * @description Up to GROUP_SIZE of each kind, with how many match in all.
+         */
+        SearchResults: {
+            organizations: components["schemas"]["OrganizationResults"];
+            contacts: components["schemas"]["ContactResults"];
+            deals: components["schemas"]["DealResults"];
         };
         /** SignInConfig */
         SignInConfig: {
@@ -1952,6 +2034,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_api_search_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResults"];
                 };
             };
             /** @description Validation Error */

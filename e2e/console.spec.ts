@@ -48,6 +48,16 @@ for (const mode of ["light", "dark"]) {
     await page.getByRole("searchbox").fill("Wilson");
     await page.getByRole("button", { name: "Add deal in Won" }).click();
     await page.keyboard.press("Escape");
+
+    // The top bar's search, with its results open, then with nothing found.
+    const search = page.getByRole("search").getByRole("combobox", { name: "Search" });
+    await search.fill("garcia");
+    await expect(page.getByRole("listbox", { name: "Search results" }).getByRole("option").first()).toBeVisible();
+    await search.press("ArrowDown");
+    await expect(page.getByRole("option", { selected: true })).toHaveCount(1);
+    await search.fill("xyzzy");
+    await expect(page.getByRole("search").getByRole("paragraph").filter({ hasText: 'No organizations, contacts or deals match "xyzzy".' })).toBeVisible();
+    await search.press("Escape");
     await expect(page.getByRole("switch", { name: "Dark mode" })).toBeChecked({ checked: mode === "dark" });
   });
 }

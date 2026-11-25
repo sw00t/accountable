@@ -89,11 +89,33 @@ Type `npm run seed` in the terminal. **This deletes everything you've entered** 
 
 ### Load the sample data (optional)
 
-`npm run seed:supabase`: to be written once TM13 is done.
+To try Accountable with the same sample data as `npm run dev`, type `npm run seed:supabase` and press Return. It says how many organizations, contacts, deals and activities the Supabase database holds now (0 when its tables aren't set up yet), and asks you to type `yes`. **Typing yes deletes everything in it**, sets up any tables that are missing, and loads the sample data. Anything else leaves the database as it was. The people you added in step 5 are kept either way.
+
+*Check:* on a new project the counts are all 0. Run it again and the counts show the sample data; answer `no` and run it once more, and the counts are the same.
+
+Skip this for a team's real data: a new project starts empty, and Accountable works with no sample data.
 
 ### Run the built app on this computer
 
-`npm run build` and `npm start`: to be written once TM10 is done.
+This runs Accountable the way Render will, against your Supabase project, so you can check everything works before deploying.
+
+1. Type `npm run build` and press Return. It builds the pages Accountable serves, and takes a few seconds.
+2. Type `npm start` and press Return. It checks the three settings in `.env` and names any that's missing, then sets up any new database tables.
+3. Open http://localhost:8000 in your browser. There's no Test User here: sign in with a person you added in step 5. Press Ctrl+C in the terminal to stop it.
+
+Run `npm run build` again after any change to Accountable's code, before `npm start`.
+
+*Check:* a wrong password is refused with "That email and password don't match"; the right one signs in. Add a contact, reload the page, and it's still there, with "Added by" and the person's display name at the foot of its details. If it shows their email instead, their display name isn't set (step 5): set it, then sign in again in a private window.
+
+### Check the database is shut to browsers
+
+Once either command above has set up the tables, check that nobody can read them with the publishable key, which every browser that opens Accountable holds.
+
+*Check:* this prints `[]`, and in Supabase, Database, Advisors, the Security Advisor lists no table with row level security disabled.
+
+```sh
+node --env-file=.env -e 'fetch(process.env.SUPABASE_URL+"/rest/v1/organizations?select=*",{headers:{apikey:process.env.SUPABASE_PUBLISHABLE_KEY}}).then(r=>r.text()).then(console.log)'
+```
 
 ### Deploy to Render
 
@@ -432,7 +454,7 @@ Watch list (seen once; a second time calls for a fix in the harness):
 - `docs/spec.md` and the area files describe the product with this change. New area files: `docs/specs/accounts.md` and `docs/specs/search.md`. Concerns 16 to 23 are new.
 - `docs/changes/multi-user/plan.md` is written: 11 parts with one owner per file, four phases (sign-in and the database, search, user menu, Render and finish), 19 risks, and tests TB44 to TB56, TF22 to TF33, TE30 to TE37 (with TE23 to TE29 rewritten) and TM10 to TM19. It asks for three new dependencies: psycopg, PyJWT and `@supabase/auth-js`. No code yet.
 
-### PH1 Sign-in and the database: built, by-hand checks under way
+### PH1 Sign-in and the database: done
 
 Built by a team of agents, one per part of the plan, each editing only its own files.
 
@@ -447,16 +469,39 @@ Built by a team of agents, one per part of the plan, each editing only its own f
 - **Spec changes the product owner decided:** G11 also allows the console's 400 for a wrong password, and the 401s and the 403 from signing out with the refused token when a session ends (TE32, TE33). U2's "Couldn't reach" message also covers `GET /config` failing, and Sign in tries again. The `users` table's name comes from the token's `display_name`, then `full_name`, then `name`. The user menu takes the name and email from the sign-in token, not `/me` (Concern 17).
 - **Tests:** `npm run check` passes in full: backend 450 passed, frontend 471 unit tests in 35 files, end-to-end 52 passed.
 
-Still open in PH1:
+#### By-hand checks (W1.14)
 
-- TM10 to TM13 against the real Supabase project, with `npm start` and `npm run seed:supabase`. The project is set up and the five steps of the guide above are done and checked; the results will be noted here. TM12's checks, for once the tables exist: a Data API request with the publishable key prints `[]`, and Supabase's Security Advisor (Database, Advisors) reports no table with row level security disabled.
+The user set up the Supabase project following the guide at the top of this file, then ran these against it.
 
-  ```sh
-  node --env-file=.env -e 'fetch(process.env.SUPABASE_URL+"/rest/v1/organizations?select=*",{headers:{apikey:process.env.SUPABASE_PUBLISHABLE_KEY}}).then(r=>r.text()).then(console.log)'
-  ```
-- `test_performance.py::test_full_size_within_budget` failed once while other agents were running tests, and passed on its own. Worth watching in TM18.
+| Check | Status |
+| --- | --- |
+| TM10 `npm run build` and `npm start` against the real project | Done. A wrong password was refused and the right one signed in. Every page opened; a contact was added and a deal moved through two stages, and both were still there after a reload. |
+| TM11 A person added in Supabase's dashboard, with a display name | Done. With no display name yet, records showed "Added by" and the person's email (U9, as specified). After setting `display_name` with the SQL in the setup guide and signing in again in a private window (there's no Sign out until PH3), records showed the name, earlier ones included. |
+| TM12 Data API shut (CN21) | Done. Supabase's Security Advisor shows no table without row level security, and a Data API request with the publishable key returns `[]`. |
+| TM13 `npm run seed:supabase` | Done. The first run on the new project showed zero counts and was answered yes. Later runs showed the sample counts, and answering no, twice, left them unchanged. |
+
+Still open, for later phases: `test_performance.py::test_full_size_within_budget` failed once while other agents were running tests, and passed on its own. Worth watching in TM18.
+
+### PH2 Search: built
+
+SC4 is met: the search box in the top bar finds an organization, a contact and a deal by part of a name in any case, and opens the one chosen.
+
+- **Backend (PT4, PT5):** `GET /api/search?q=` matches the casefolded text anywhere in `search_name`, with `%` and `_` matching only themselves, and returns up to 5 per group, names starting with the text first. Each group's total comes from the same query, so a search makes three queries. A blank search returns three empty groups. `main.py` includes the router, protected like the others.
+- **Same order on both databases (PT1):** Postgres sorted `search_name` by language rules, which skip spaces, while SQLite sorts by byte order. Migration 0003 gives the column the "C" collation on Postgres, so the alphabetical order matches (IC9). It's a new migration because 0002 was already applied to Supabase; it changes nothing on SQLite.
+- **Top bar (PT6):** 64 px high, with no panel and no line under it, holding the search box on the left; the content's top padding went from 28 px to 4 px to make room.
+- **Search box (PT8):** results appear 150 ms after typing pauses, grouped with "N more" lines, with the match in bold and a second line for each result. It works by keyboard, closes on Escape keeping the text, and announces the number of results to screen readers. A failed search says "Couldn't search." in the results panel.
+- **End to end (PT10):** TE35 searches for "garcia" and finds Garcia Freight, Sabrina Garcia and two Garcia deals; TE21 now also checks open results and the no-results text for console errors.
+- **Departures from the plan,** all now in `plan.md`: migration 0003 (new work item W2.6 and test TB57); the search query's details; the top bar's padding; the TF22 and TF33 app tests' new ways of finding things now that the search box adds a second status region; and the PT8 details below.
+- **Spec gaps filled in `search.md`:** the "C" collation in the data model; and in the search box's screen, the second lines when an organization, industry or stage is missing, the keys (wrapping, Up from nothing goes to the last result, Down reopens, Enter with nothing highlighted does nothing), Escape keeping the text, focus closing and reopening the results, the failed-search message, and what screen readers hear.
+- **Tests:** `npm run check` passes in full: backend 476 passed, frontend 510 unit tests in 37 files, end-to-end 53 passed.
+
+Still open:
+
+- The next `npm start` applies migration 0003 to Supabase. Check that search works there too, with the same order as locally.
+- For PH4: check which Host header Render's health check sends to `/api/health`. If it isn't the `onrender.com` host, the host check refuses it.
 
 ## Ideas for later
 
 - The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.
 - The "Dark mode" switch takes more sidebar space than it needs; make it a small icon that toggles dark mode on and off.
+- Hide people's emails where they have no display name, rather than showing the email in "Added by" and "Last changed by" (U9 shows the email today). This changes the spec, so it belongs in a later change, not multi-user.

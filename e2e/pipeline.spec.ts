@@ -19,15 +19,25 @@ async function drag(page: Page, from: Locator, to: Locator, where: "above" | "be
 }
 
 /**
- * Waits for the next card move to reach the server and checks it saved. Start it
- * before the drag or key press, then await it before a reload or navigation: the
- * board updates before the server answers (P6), and "network idle" returns at once
- * on a page that has already been idle, so neither shows the save has finished.
+ * Waits for the next card move to reach the server and checks it saved, then waits for
+ * the board to reload from the server, so the next drag doesn't start while the board
+ * redraws. Start it before the drag or key press, then await it before the next drag, a
+ * reload or navigation: the board updates before the server answers (P6), and "network
+ * idle" returns at once on a page that has already been idle, so neither shows the save
+ * has finished.
  */
 function moveSaved(page: Page) {
-  return page
+  let moved = false;
+  const saved = page
     .waitForResponse((r) => r.request().method() === "POST" && /\/api\/deals\/\d+\/move$/.test(new URL(r.url()).pathname))
-    .then((r) => expect(r.status(), "move saved").toBe(200));
+    .then((r) => {
+      moved = true;
+      expect(r.status(), "move saved").toBe(200);
+    });
+  const reloaded = page.waitForResponse(
+    (r) => moved && r.request().method() === "GET" && new URL(r.url()).pathname === "/api/deals",
+  );
+  return Promise.all([saved, reloaded]);
 }
 
 const money = (text: string | null) => Number((text ?? "").replace(/[^0-9]/g, ""));
@@ -53,7 +63,7 @@ test("TE10 six columns; dragging to another column changes stage and probability
 
 test("TE11 a card dropped above or below cards, in its own or another column, stays there after a reload", async ({ page }) => {
   await page.goto("/pipeline");
-  expect(await titles(page, "New")).toEqual(["Logan training package", "Shaw second site expansion", "Burke consulting retainer"]);
+  await expect.poll(() => titles(page, "New")).toEqual(["Logan training package", "Shaw second site expansion", "Burke consulting retainer"]);
 
   // Higher in its own column.
   let saved = moveSaved(page);
@@ -76,9 +86,9 @@ test("TE11 a card dropped above or below cards, in its own or another column, st
   await saved;
 
   await page.reload();
-  expect(await titles(page, "New")).toEqual(["Burke consulting retainer", "Logan training package", "Shaw second site expansion"]);
-  expect(await titles(page, "Negotiation")).toEqual(negotiation);
-  expect(await titles(page, "Proposal")).toEqual(proposal);
+  await expect.poll(() => titles(page, "New")).toEqual(["Burke consulting retainer", "Logan training package", "Shaw second site expansion"]);
+  await expect.poll(() => titles(page, "Negotiation")).toEqual(negotiation);
+  await expect.poll(() => titles(page, "Proposal")).toEqual(proposal);
 });
 
 test("TE12 column and board totals change the moment a card drops", async ({ page }) => {

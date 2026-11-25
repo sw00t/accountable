@@ -34,9 +34,11 @@ test("TE06 add, search, sort, edit and filter deals; late badge; the page shows 
   await value.getByRole("button").click();
   await value.getByRole("button").click();
   await expect(value).toHaveAttribute("aria-sort", "descending");
-  const first = await page.getByRole("row").nth(1).locator("td").nth(4).textContent();
-  const second = await page.getByRole("row").nth(2).locator("td").nth(4).textContent();
-  expect(Number(first!.replace(/\D/g, ""))).toBeGreaterThanOrEqual(Number(second!.replace(/\D/g, "")));
+  // Every deal again, then the two highest values first, once the sorted list has loaded.
+  await expect(page.getByText("Showing 1 to 25 of")).toBeVisible();
+  const valueIn = async (row: number) =>
+    Number(((await page.getByRole("row").nth(row).locator("td").nth(4).textContent()) ?? "").replace(/\D/g, ""));
+  await expect.poll(async () => (await valueIn(1)) >= (await valueIn(2))).toBe(true);
 
   // Late deals stand out.
   await search.fill("Garcia data migration");

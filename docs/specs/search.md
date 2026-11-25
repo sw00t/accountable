@@ -22,7 +22,7 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 
 ### Data model
 
-Organizations, contacts and deals each have a `search_name` column (text, required): the name in lower case as Python's `casefold()` makes it, set by the backend whenever the name is saved, and filled for existing rows by the migration that adds it.
+Organizations, contacts and deals each have a `search_name` column (text, required): the name in lower case as Python's `casefold()` makes it, set by the backend whenever the name is saved, and filled for existing rows by the migration that adds it. On Postgres the column has the "C" collation, so it compares and sorts by byte order, as SQLite does, and F3's alphabetical order is the same on both.
 
 ### API
 
@@ -33,3 +33,9 @@ Organizations, contacts and deals each have a `search_name` column (text, requir
 ### Screens
 
 **Search box.** On the left of the top bar, 400 px wide, on the panel color with a Lucide search icon inside its left edge. The results open under it in a panel 480 px wide with 12 px rounded corners and the usual shadow. Each group has its name as a 13 px label in secondary text, and each result has its section's sidebar icon, the name in 14 px and the second line in 13 px secondary text. The highlighted result has the hover tint.
+
+A deal's second line is its organization and stage separated by a middle dot ("Garcia Freight · Proposal"), or only the stage when it has no organization. An organization with no industry, or a contact with no organization, has no second line.
+
+Nothing is highlighted until an arrow key is pressed. Down and Up wrap around the list, Up with nothing highlighted goes to the last result, and Down opens the results again after Escape. Enter with nothing highlighted does nothing. Escape closes the results and keeps the typed text. Moving focus away from the box closes the results, and focusing it again opens them.
+
+When a search fails, the results panel says "Couldn't search." followed by the usual detail (G8). For screen readers (F6), a hidden status reads the total number of matches as "N results", or the no-results text, and each group is named.

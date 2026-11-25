@@ -145,3 +145,15 @@ def test_postgres_engine_has_a_small_pool_that_replaces_dropped_connections():
     assert isinstance(pool, QueuePool)
     assert pool.size() + pool._max_overflow <= 5
     assert pool._pre_ping is True
+
+
+def test_search_name_sorts_by_byte_order_on_postgres_only():
+    """IC9: a language collation on Postgres would skip spaces when ordering."""
+    from sqlalchemy.dialects import postgresql, sqlite
+    from sqlalchemy.schema import CreateTable
+
+    for table in NAMED:
+        on_postgres = str(CreateTable(table).compile(dialect=postgresql.dialect()))
+        on_sqlite = str(CreateTable(table).compile(dialect=sqlite.dialect()))
+        assert 'search_name VARCHAR COLLATE "C" NOT NULL' in on_postgres
+        assert "search_name VARCHAR NOT NULL" in on_sqlite

@@ -106,8 +106,20 @@
   background: var(--midnight);
   transform: translateX(14px);
 }
+.workspace {
+  min-width: 0;
+}
+/* On the page background with no panel or line under it: the brand rules out a top border. */
+.topbar {
+  height: 64px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
 main {
-  padding: 28px 32px 48px;
+  padding: 4px 32px 48px;
   min-width: 0;
 }
 .page-head {

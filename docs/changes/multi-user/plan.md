@@ -10,7 +10,7 @@ The files are grouped into parts. Each file belongs to exactly one part, so each
 
 Three choices keep the parts apart:
 
-- The whole schema change is one migration in [PT1](#pt1), search columns included, so later phases change no shared backend file.
+- The whole schema change is one migration in [PT1](#pt1), search columns included, so later phases change no shared backend file. One exception came up in PH2: `search_name` needed byte-order sorting on Postgres (IC9), and 0002 had already been applied to Supabase, so PT1 added migration 0003 ([W2.6](#w2-6)).
 - New backend modules keep their own Pydantic models (`routers/search.py`, `routers/account.py`) instead of adding them to `schemas.py`.
 - New frontend folders bring their own stylesheet (`account/account.css`, `search/search.css`), so only [PT6](#pt6) edits `components.css`.
 
@@ -21,13 +21,14 @@ Three choices keep the parts apart:
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
 | `backend/app/config.py` | Every setting the change needs: the sign-in mode (`ACCOUNTABLE_SIGN_IN`, `local` or `supabase`, Supabase when unset), `DATABASE_URL` turned into a SQLAlchemy URL for psycopg, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, the Render host from `RENDER_EXTERNAL_HOSTNAME`, whether it runs on Render (`RENDER`), and where the built frontend is. A check that names any missing Supabase setting. | [W1.1](#w1-1) | Changed |
-| `backend/app/db.py` | The `users` table; `created_by`, `updated_by` and `search_name` columns; the new indexes; an engine for Postgres (pre-ping, small pool) beside the SQLite one, chosen by the mode | [W1.2](#w1-2) | Changed |
+| `backend/app/db.py` | The `users` table; `created_by`, `updated_by` and `search_name` columns; the new indexes; an engine for Postgres (pre-ping, small pool) beside the SQLite one, chosen by the mode. On Postgres `search_name` is `VARCHAR COLLATE "C"`, through `String().with_variant(String(collation="C"), "postgresql")`, so it sorts by byte order as SQLite does (IC9). | [W1.2](#w1-2), [W2.6](#w2-6) | Changed |
 | `backend/migrations/env.py` | Runs against the database the mode chooses, not only the SQLite file; the command-line upgrade uses `app_engine()`. In offline mode it writes SQL with no database connection, for the `sqlalchemy.url` option or else the mode's database (TB45). | [W1.2](#w1-2) | Changed |
 | `backend/migrations/versions/0002_accounts_and_search.py` | Adds `users`, the four `created_by` and `updated_by` pairs and the three `search_name` columns, fills `search_name` for existing rows with Python's `casefold()`, and on Postgres turns on row level security for every table (CN21). It calls `casefold()` itself rather than importing `rules.search_key`, so the two must stay the same. Downgrading leaves row level security on, so the Data API stays shut. | [W1.2](#w1-2) | New |
+| `backend/migrations/versions/0003_search_name_collation.py` | On Postgres, gives the three `search_name` columns the "C" collation, so they sort by byte order as on SQLite (IC9); their indexes are rebuilt with it. Changes nothing on SQLite. Downgrading restores the default collation. | [W2.6](#w2-6) | New |
 | `pyproject.toml`, `uv.lock` | Adds `psycopg[binary]` and `pyjwt[crypto]` (see [New dependencies](#new-dependencies)) | [W1.1](#w1-1) | Changed |
 | `backend/tests/test_config.py` | TB44 | [W1.1](#w1-1) | New |
-| `backend/tests/test_migrations.py` | TB45 | [W1.2](#w1-2) | Changed |
-| `backend/tests/test_db.py` | The new columns and indexes exist; `search_name` is required; removing a user empties `created_by` and `updated_by`; the Postgres engine has a small pool with pre-ping | [W1.2](#w1-2) | Changed |
+| `backend/tests/test_migrations.py` | TB45, and TB57 for migration 0003 | [W1.2](#w1-2), [W2.6](#w2-6) | Changed |
+| `backend/tests/test_db.py` | The new columns and indexes exist; `search_name` is required; removing a user empties `created_by` and `updated_by`; the Postgres engine has a small pool with pre-ping; `search_name` has the "C" collation on Postgres only | [W1.2](#w1-2), [W2.6](#w2-6) | Changed |
 
 <a id="pt2"></a>**PT2 Sign-in on the backend**
 
@@ -57,7 +58,7 @@ Three choices keep the parts apart:
 
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
-| `backend/app/routers/search.py` | `GET /search?q=`: casefolds and trims the text, escapes `%` and `_`, matches `search_name`, orders starts-with first then alphabetically, returns up to 5 per group with each group's total | [W2.1](#w2-1) | New |
+| `backend/app/routers/search.py` | `GET /search?q=`: casefolds and trims the text, escapes `%` and `_` (`LIKE` with autoescape and `ESCAPE '/'`), matches `search_name`, orders starts-with first then alphabetically, returns up to 5 per group with each group's total. A blank, missing or all-space `q` gives three empty groups. Each group's total comes from `count(*) OVER ()` in the same query, so a search makes three queries, not six. | [W2.1](#w2-1) | New |
 | `backend/tests/test_search.py` | TB51, TB52 | [W2.1](#w2-1) | New |
 
 <a id="pt5"></a>**PT5 Server and deployment**
@@ -95,10 +96,10 @@ Three choices keep the parts apart:
 | `frontend/src/main.test.tsx` | Stubs `/config` and a stored session, so the app starts signed in | [W1.10](#w1-10) | Changed |
 | `frontend/src/pipeline/board.test.tsx` | Builds its deals with `dealRow`, which has the new fields | [W1.10](#w1-10) | Changed |
 | `frontend/src/shared/TopBar.tsx` | The 64 px top bar with no line under it: the search box on the left, then the user menu on the right | [W2.3](#w2-3), [W3.3](#w3-3) | New |
-| `frontend/src/shared/Layout.tsx` | Renders the top bar above the content | [W2.3](#w2-3) | Changed |
+| `frontend/src/shared/Layout.tsx` | Renders the top bar above the content; `SearchBox` takes no props | [W2.3](#w2-3) | Changed |
 | `frontend/src/shared/Sidebar.tsx` | Drops the dark mode switch | [W3.3](#w3-3) | Changed |
-| `frontend/src/shared/theme/components.css` | The `.authorship` style for [PT9](#pt9) (13 px, secondary text, 16 px above); top bar layout; the switch's styles removed | [W1.12](#w1-12), [W2.3](#w2-3), [W3.3](#w3-3) | Changed |
-| `frontend/src/shared/api.test.ts`, `frontend/src/App.test.tsx` | TF22, TF33 | [W1.10](#w1-10), [W3.3](#w3-3) | Changed |
+| `frontend/src/shared/theme/components.css` | The `.authorship` style for [PT9](#pt9) (13 px, secondary text, 16 px above); top bar layout, 64 px high with no panel and no line under it, with the content's top padding cut from 28 px to 4 px; the switch's styles removed | [W1.12](#w1-12), [W2.3](#w2-3), [W3.3](#w3-3) | Changed |
+| `frontend/src/shared/api.test.ts`, `frontend/src/App.test.tsx` | TF22, TF33. The app test for TF22 checks that no sign-in or "Couldn't" text shows, rather than an empty status region, since the search box adds a second one. TF33 finds the top bar as the banner outside `<main>`, because Testing Library also counts the page header as a banner. | [W1.10](#w1-10), [W2.3](#w2-3), [W3.3](#w3-3) | Changed |
 
 <a id="pt7"></a>**PT7 Account: sign-in, user menu and theme**
 
@@ -121,9 +122,9 @@ Three choices keep the parts apart:
 
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
-| `frontend/src/search/SearchBox.tsx` | F1 to F6: the box, the grouped results, keyboard use and the combobox roles | [W2.4](#w2-4) | New |
-| `frontend/src/search/useSearch.ts` | F7: waits for a 150 ms pause, keys each request by its text, and keeps showing the last results until newer ones arrive | [W2.4](#w2-4) | New |
-| `frontend/src/search/highlight.ts` | Finds the matching part of a name, ignoring case, for the bold | [W2.4](#w2-4) | New |
+| `frontend/src/search/SearchBox.tsx` | F1 to F6: the box, the grouped results, keyboard use and the combobox roles. The input is `type="text"`, because Chrome's search input clears its text on Escape. A hidden status inside the search landmark reads the total as "N results", or the no-results text, and each group is named by `aria-label`. | [W2.4](#w2-4) | New |
+| `frontend/src/search/useSearch.ts` | F7: waits for a 150 ms pause, keys each request by its text, and keeps showing the last results until newer ones arrive. Clearing the box forgets them, so text typed next shows nothing until its own reply. | [W2.4](#w2-4) | New |
+| `frontend/src/search/highlight.ts` | Finds the matching part of a name, ignoring case, for the bold. It copies Python's `casefold()` for ß, ς and ſ; rarer letters that only `casefold()` folds still match, but aren't bolded. | [W2.4](#w2-4) | New |
 | `frontend/src/search/search.css` | Search box and results styles, from tokens only | [W2.4](#w2-4) | New |
 | `frontend/src/search/SearchBox.test.tsx`, `highlight.test.ts` | TF27, TF28 | [W2.4](#w2-4) | New |
 
@@ -149,9 +150,10 @@ Three choices keep the parts apart:
 | `e2e/search.spec.ts` | TE35 | [W2.5](#w2-5) | New |
 | `e2e/user-menu.spec.ts` | TE36 | [W3.4](#w3-4) | New |
 | `e2e/dark-mode.spec.ts` | TE26 signs in first, since blocked storage can't hold the session; later TE23 to TE29 rewritten for the theme choice, and TE37 | [W1.13](#w1-13), [W3.4](#w3-4) | Changed |
-| `e2e/console.spec.ts` | TE21 also walks the sign-in screen, open search results and the open menu, and switches theme through the menu | [W1.13](#w1-13), [W3.4](#w3-4) | Changed |
+| `e2e/console.spec.ts` | TE21 also walks the sign-in screen, open search results and the open menu, and switches theme through the menu | [W1.13](#w1-13), [W2.5](#w2-5), [W3.4](#w3-4) | Changed |
 | `e2e/persistence.spec.ts` | TE09 starts its second backend, on port 8101, with local sign-in and signs in on it | [W1.13](#w1-13) | Changed |
-| `e2e/pipeline.spec.ts` | TE12 waits for the board total before reading it | [W1.13](#w1-13) | Changed |
+| `e2e/pipeline.spec.ts` | TE12 waits for the board total before reading it; TE11's reads poll, and `moveSaved` waits for the board to reload after each save | [W1.13](#w1-13), [W2.5](#w2-5) | Changed |
+| `e2e/deals.spec.ts` | TE06's sort check waits for the list and polls | [W2.5](#w2-5) | Changed |
 
 ### Docs and harness
 
@@ -187,7 +189,7 @@ Phases run in order, and each ends with `npm run check` passing and a note in `d
 | Phase | Name | Parts | Done when |
 | --- | --- | --- | --- |
 | <a id="ph1"></a>PH1 | Sign-in and the database | [PT1](#pt1), [PT2](#pt2), [PT3](#pt3), [PT5](#pt5), [PT6](#pt6), [PT7](#pt7), [PT9](#pt9), [PT10](#pt10) | Signed out, every page shows the sign-in screen and every API route refuses; signed in as Test User, every existing test passes; records show who added them; `npm start` signs in against the real Supabase project with its data loaded by `npm run seed:supabase` (TM10). |
-| <a id="ph2"></a>PH2 | Search | [PT4](#pt4), [PT5](#pt5), [PT6](#pt6), [PT8](#pt8), [PT10](#pt10) | The top bar's search finds an organization, a contact and a deal by part of a name in any case (SC4). |
+| <a id="ph2"></a>PH2 | Search | [PT1](#pt1), [PT4](#pt4), [PT5](#pt5), [PT6](#pt6), [PT8](#pt8), [PT10](#pt10) | The top bar's search finds an organization, a contact and a deal by part of a name in any case (SC4). |
 | <a id="ph3"></a>PH3 | User menu | [PT6](#pt6), [PT7](#pt7), [PT10](#pt10) | The menu shows the initials, name and email, signs out, and holds the theme, with System following the device and dark the default (SC5). The sidebar switch is gone. |
 | <a id="ph4"></a>PH4 | Render and finish | [PT5](#pt5), [PT11](#pt11) | The app runs on Render at its `onrender.com` address, signed in against Supabase (SC6); the by-hand checks are done; the docs match what was built (SC1 to SC6). |
 
@@ -214,11 +216,12 @@ Phases run in order, and each ends with `npm run check` passing and a note in `d
 | <a id="w2-3"></a>W2.3 | [PH2](#ph2) | [PT6](#pt6) | Regenerate the types, add `TopBar.tsx` with the search box, and its layout in `components.css`. | [W2.2](#w2-2) | F1 | None | [TF33](#tf33) |
 | <a id="w2-4"></a>W2.4 | [PH2](#ph2) | [PT8](#pt8) | `SearchBox.tsx`, `useSearch.ts`, `highlight.ts` and `search.css`, per the spec's search screen. | [W2.3](#w2-3) | F1 to F7, M3 | [R15](#r15) | [TF27](#tf27), [TF28](#tf28) |
 | <a id="w2-5"></a>W2.5 | [PH2](#ph2) | [PT10](#pt10) | TE35, and search results in TE21. | [W2.4](#w2-4) | SC4 | None | [TE35](#te35), [TE21](#te21) |
+| <a id="w2-6"></a>W2.6 | [PH2](#ph2) | [PT1](#pt1) | Migration 0003 and `db.py`: the "C" collation for `search_name` on Postgres, so names sort alphabetically by byte order on both databases. A new migration, since 0002 was already applied to Supabase. The next `npm start` applies it there. | [PH1](#ph1) | IC9, F3, CN20 | [R6](#r6) | [TB57](#tb57) |
 | <a id="w3-1"></a>W3.1 | [PH3](#ph3) | [PT7](#pt7) | The theme: `index.html`, `mode.ts` with System, `ThemeChoice.tsx`; delete `ThemeSwitch.tsx` and its test. | [PH2](#ph2) | M1, M2, IC10, IC11, CN12 | [R17](#r17) | [TF31](#tf31), [TF32](#tf32) |
 | <a id="w3-2"></a>W3.2 | [PH3](#ph3) | [PT7](#pt7) | `initials.ts` and `UserMenu.tsx` with the theme choice and signing out, which clears the cached queries and keeps the theme. | [W3.1](#w3-1) | U4, U11, U12, IC4 | None | [TF29](#tf29), [TF30](#tf30) |
 | <a id="w3-3"></a>W3.3 | [PH3](#ph3) | [PT6](#pt6) | Put the menu in the top bar, take the switch out of the sidebar and its styles out of `components.css`. | [W3.2](#w3-2) | U11, IC10 | None | [TF33](#tf33) |
 | <a id="w3-4"></a>W3.4 | [PH3](#ph3) | [PT10](#pt10) | TE36, TE37, the rewritten TE23 to TE29, and the menu in TE21. | [W3.3](#w3-3) | SC5 | [R17](#r17) | [TE21](#te21), [TE23](#te23) to [TE29](#te29), [TE36](#te36), [TE37](#te37) |
-| <a id="w4-1"></a>W4.1 | [PH4](#ph4) | [PT5](#pt5) | `render.yaml`; deploy it, enter the three settings in Render, and do TM14. | [PH3](#ph3) | G16, IC13, SC6 | [R9](#r9), [R19](#r19) | [TM14](#tm14) |
+| <a id="w4-1"></a>W4.1 | [PH4](#ph4) | [PT5](#pt5) | `render.yaml`; deploy it, enter the three settings in Render, and do TM14. Check which Host header Render's health check sends to `/api/health`: if it isn't the `onrender.com` host, the host check refuses it. | [PH3](#ph3) | G16, IC13, SC6 | [R9](#r9), [R19](#r19) | [TM14](#tm14) |
 | <a id="w4-2"></a>W4.2 | [PH4](#ph4) | [PT11](#pt11) | Update the docs and `ui-check.md`, do TM15 to TM19, run ui-check, and check every area file still matches what was built. | [W4.1](#w4-1) | SC1 to SC6, IC8 | None | [TM15](#tm15) to [TM19](#tm19) |
 
 ## Risks
@@ -266,6 +269,7 @@ Phases run in order, and each ends with `npm run check` passing and a note in `d
 | <a id="tb54"></a>TB54 | `test_hosts.py` | The Render host is answered when `RENDER_EXTERNAL_HOSTNAME` names it, and any other host is refused, as before | G6 | None |
 | <a id="tb55"></a>TB55 | `test_seed_supabase.py` | Against a temporary database, it shows the counts; any answer but "yes" leaves the data as it was; "yes" loads the sample data and keeps `users` | G15, IC6 | [R16](#r16) |
 | <a id="tb56"></a>TB56 | `test_startup.py` | With local sign-in, a missing SQLite file is created and seeded; in Supabase mode the database is migrated and never seeded; local sign-in won't start when `RENDER` is set; `npm run seed` loads the SQLite file even with `DATABASE_URL` set | G4, G5, IC6 | [R1](#r1) |
+| <a id="tb57"></a>TB57 | `test_migrations.py`, `test_db.py` | Migration 0003, generated as SQL for Postgres, gives each `search_name` the "C" collation and its downgrade takes it away; on SQLite it changes nothing and keeps the data; the tables declare the collation for Postgres only | IC9, F3 | [R6](#r6) |
 
 ### Frontend unit tests (Vitest)
 
@@ -276,7 +280,7 @@ Phases run in order, and each ends with `npm run check` passing and a note in `d
 | <a id="tf24"></a>TF24 | `account/SignInPage.test.tsx` | The form signs in; a wrong password gives U2's message and keeps the email but not the password; an unreachable sign-in gives its message; local sign-in shows the note with the fields filled in; there's no sign-up or reset link | U2, U3, U7, IC3, G8 | None |
 | <a id="tf25"></a>TF25 | `account/SessionGate.test.tsx` | Signed out, any address shows the sign-in screen and then opens that address once signed in; when the session ends, the sign-in screen says so and returns to the same page | U1, U3, CN19 | [R12](#r12) |
 | <a id="tf26"></a>TF26 | `shared/Authorship.test.tsx`, the three record page tests, `activities/Timeline.test.tsx` | Each record page shows who added and last changed it, with dates; "Sample data" for sample records; dates as `16 Nov 2026`; timeline activities show who added them | U9, U10, G10 | None |
-| <a id="tf27"></a>TF27 | `search/SearchBox.test.tsx` | One request per pause in typing; an older reply never replaces newer results; groups in order with "N more" lines; no-results text; arrows, Enter and Escape; clicking a result opens it and clears the box; combobox and listbox roles | F1, F3 to F7 | [R15](#r15) |
+| <a id="tf27"></a>TF27 | `search/SearchBox.test.tsx` | One request per pause in typing; an older reply never replaces newer results; text typed after clearing the box never shows the cleared text's results; groups in order with "N more" lines; no-results text; arrows, Enter and Escape; clicking a result opens it and clears the box; combobox and listbox roles | F1, F3 to F7 | [R15](#r15) |
 | <a id="tf28"></a>TF28 | `search/highlight.test.ts` | The bold part is found in any case, including accented letters, and nothing is bolded when the match can't be placed | F4 | None |
 | <a id="tf29"></a>TF29 | `account/initials.test.ts` | "Jane Smith" gives JS, "Jane van der Berg" JB, "Cher" C, no name the email's first letter, always in capitals | U11 | None |
 | <a id="tf30"></a>TF30 | `account/UserMenu.test.tsx` | The circle's name for screen readers; the menu shows the name and email; it opens with a click, Enter or Space, moves with the arrows, and Escape closes it and puts focus back; signing out clears the cached data, shows the sign-in screen and keeps the theme | U4, U11, U12 | None |
@@ -296,7 +300,7 @@ Phases run in order, and each ends with `npm run check` passing and a note in `d
 | <a id="te32"></a>TE32 | `sign-in.spec.ts` | A wrong password shows U2's message and keeps the email; the sign-in's 400 in the console is allowed (G11) | U2, G11 | None |
 | <a id="te33"></a>TE33 | `sign-in.spec.ts` | When the session ends (the stored token made invalid), the next page shows "Your session has ended. Sign in again." and signing in returns to that page; the 401s and the 403 from signing out with the refused token are allowed in the console (G11) | U3, CN19, G11 | [R12](#r12) |
 | <a id="te34"></a>TE34 | `authorship.spec.ts` | A contact added through the form shows "Added by Test User on" today's real date (the backend records its own clock, not the tests' fixed 16 Nov 2026); an activity logged on it shows Test User; a sample record shows "Added by Sample data on" a date | U8 to U10, SC3 | None |
-| <a id="te35"></a>TE35 | `search.spec.ts` | Typing part of a name in another case finds an organization, a contact and a deal from the top bar; arrows and Enter open one; Escape closes the results | F1 to F5, SC4 | None |
+| <a id="te35"></a>TE35 | `search.spec.ts` | Typing part of a name in another case finds an organization, a contact and a deal from the top bar ("garcia" finds Garcia Freight, Sabrina Garcia, "Garcia data migration" and "Garcia hardware refresh"); arrows and Enter open one; Escape closes the results | F1 to F5, SC4 | None |
 | <a id="te36"></a>TE36 | `user-menu.spec.ts` | The circle shows TU; the menu shows Test User and the email; it works by keyboard; Sign out shows the sign-in screen, and the theme chosen before is still on | U4, U11, U12 | None |
 | <a id="te37"></a>TE37 | `dark-mode.spec.ts` | With System chosen, the page follows the emulated device setting from light to dark and back without a reload, and after one; a `light` saved before this change still opens light | M1, M2, SC5 | [R17](#r17) |
 
