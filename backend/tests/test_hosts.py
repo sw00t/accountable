@@ -3,6 +3,7 @@
 import pytest
 
 RENDER_HOST = "accountable.onrender.com"
+OTHER_HOSTS = ["evil.example.com", "other.onrender.com", f"{RENDER_HOST}.evil.example.com"]
 
 
 def test_the_render_host_is_answered_when_render_names_it(client, monkeypatch):
@@ -11,19 +12,29 @@ def test_the_render_host_is_answered_when_render_names_it(client, monkeypatch):
 
 
 def test_the_render_host_is_refused_when_render_doesnt_name_it(client):
-    assert client.get("/api/health", headers={"Host": RENDER_HOST}).status_code == 400
+    assert client.get("/api/organizations", headers={"Host": RENDER_HOST}).status_code == 400
 
 
-@pytest.mark.parametrize(
-    "host", ["evil.example.com", "other.onrender.com", f"{RENDER_HOST}.evil.example.com"]
-)
+@pytest.mark.parametrize("host", OTHER_HOSTS)
 def test_other_hosts_are_still_refused_on_render(client, monkeypatch, host):
     monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", RENDER_HOST)
-    refused = client.get("/api/health", headers={"Host": host})
+    refused = client.get("/api/organizations", headers={"Host": host})
     assert refused.status_code == 400
     assert refused.json()["fields"] == {}
 
 
 def test_this_computer_is_still_answered_on_render(client, monkeypatch):
     monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", RENDER_HOST)
-    assert client.get("/api/health", headers={"Host": "127.0.0.1:8000"}).status_code == 200
+    assert client.get("/api/organizations", headers={"Host": "127.0.0.1:8000"}).status_code == 200
+
+
+def test_renders_health_check_is_answered(signed_out_client, monkeypatch):
+    """Render's health check sends the onrender.com address as its Host."""
+    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", RENDER_HOST)
+    assert signed_out_client.get("/api/health", headers={"Host": RENDER_HOST}).status_code == 200
+
+
+@pytest.mark.parametrize("path", ["/api/health", "/api/config", "/api/organizations", "/deals/12"])
+def test_nothing_answers_an_unknown_host(client, monkeypatch, path):
+    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", RENDER_HOST)
+    assert client.get(path, headers={"Host": "evil.example.com"}).status_code == 400

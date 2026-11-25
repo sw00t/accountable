@@ -1,0 +1,30 @@
+# Accountable on Render (G16): one web service on the free plan.
+# The build installs the backend and frontend and builds the frontend. `npm start`'s script
+# then runs the backend, which migrates the database and serves the app and the API.
+# The three Supabase settings are entered in Render's dashboard, never written here.
+services:
+  - type: web
+    name: accountable
+    runtime: python
+    plan: free
+    # The same region as the Supabase project (US West), so each query is quick.
+    region: oregon
+    buildCommand: pip install uv && uv sync --frozen && npm ci && npm run build
+    startCommand: node scripts/start.mjs
+    healthCheckPath: /api/health
+    envVars:
+      # Render needs full versions: these match .python-version and package.json's engines.
+      - key: PYTHON_VERSION
+        value: "3.12.14"
+      - key: NODE_VERSION
+        value: "24.22.1"
+      # uv keeps the app's packages apart from Render's own environment, where uv itself lives,
+      # so syncing them can't remove uv.
+      - key: UV_PROJECT_ENVIRONMENT
+        value: .venv-app
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
