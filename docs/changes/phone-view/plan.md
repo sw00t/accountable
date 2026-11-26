@@ -131,6 +131,7 @@ Three choices keep the parts apart and the laptop unchanged:
 | `frontend/src/test-setup.ts` | `setPhone("landscape")`, so unit tests can cover landscape | [W4.2](#w4-2) | Changed |
 | `frontend/src/shared/topBarSlot.ts`, `Layout.tsx`, `TopBar.tsx`, `PageHeader.tsx` | The product owner's choice: in landscape the top bar reads title, filters, search, then the main action, through a second slot after the search button, so the order read and tabbed to is the order seen (N6). `TopBarPhone.test.tsx` checks both orientations | [W4.2](#w4-2) | Changed, one test new |
 | `frontend/src/search/SearchBox.tsx` | The product owner's choice: full-screen search on a phone says "Search everything" (F8) | [W4.2](#w4-2) | Changed |
+| `frontend/src/shared/theme/phone.css`, `records-phone.css`, `e2e/phone/tables.spec.ts` | Found at Test: paired form fields (`.row-2`) one under the other in portrait and two that can shrink in landscape, so the Add deal form's Value and Close date stay inside it; the log form's type choice styled as the theme choice is. TE40 checks every Add deal field sits inside the form at each size | Test | Changed |
 | `e2e/phone/journeys.spec.ts` | TE41, TE43 and TE44 run at every size (W4.1), and TE41 checks search covers the tab bar | [W4.1](#w4-1) | Changed |
 
 ### Docs and harness

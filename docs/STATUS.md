@@ -663,6 +663,14 @@ Committed as `0ccf8c9` and merged into `main` on 25 Nov, before its harness roun
 - **Tests:** `npm run check` passes in full: backend 512, frontend 694 unit tests in 49 files, end-to-end 95 (56 laptop, 39 phone).
 - **Departures from the plan,** all now in `plan.md` as PT10: the fixes above, `TableFilters` in `TablePhone.tsx`, and the journeys at every size.
 
+### Test: done
+
+- **Checks:** `npm run check` passes in full: backend 512, frontend 694 unit tests in 49 files, end-to-end 98 (56 laptop, 42 phone).
+- **ui-check at phone sizes, again:** nine of the ten PH4 findings were confirmed fixed (the log form, summaries wrapping, the deals filter, follow-ups on two lines, the landscape top bar's order, 16 px fields, search covering the tab bar with "Search everything", raised activity icons, and the menu sheet), with no sideways scroll, no tap target under 44 px and no console errors. The tenth was not: the Add deal form's Close date and Value still ran past its edge, since its paired fields sat in two columns that couldn't shrink. Paired fields now sit one under the other in portrait and share the width in landscape, and a new TE40 test checks every Add deal field stays inside the form at each size; it fails on the code before the fix. The log form's type choice now looks like the theme choice (ringed on the raised color) rather than a black track. It also noted button labels are 14 px; N7 covers fields, which are 16 px, so they stay.
+- **On a laptop:** the TM22 check in PH4 stands, since every change since is inside the phone query or switched off at laptop sizes (the landscape action slot exists only in landscape).
+- **The live database (Supabase MCP server, read only):** seven tables, row level security on for every one, no policies, which is intended: the Data API is shut (CN21) and only the backend's own connection reads them. The security advisor's notices are those seven (INFO, "RLS enabled, no policy") and one WARN, leaked password protection off in Supabase Auth, a project setting this change doesn't touch. The phone view changes no tables.
+- **By hand:** the product owner used the phone view on a real phone through `npm run dev` on the local network and said it looks good, and chose the shorter search placeholder and the landscape top bar's order. `npm start` against Supabase and the sign-off on Render (TM20) come with Deploy.
+
 ## Ideas for later
 
 - **Laptop tidying found by ui-check (TM22):** the inline Log activity field is too narrow for its placeholder; a long email on a contact's details breaks mid-word; contact table rows wrap unevenly at 1440 wide.

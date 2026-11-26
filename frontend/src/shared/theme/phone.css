@@ -39,6 +39,13 @@
   .field input[type="date"] {
     min-width: 0;
   }
+  /* Paired fields fill the width one under the other in portrait, and share it in landscape. */
+  .row-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app.landscape .row-2 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
   /* Activity icons inside a panel sit on the raised color (AMOLED dark). */
   .li-icon:not(.stage) {
     background: var(--raised);

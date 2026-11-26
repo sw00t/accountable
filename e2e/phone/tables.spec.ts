@@ -78,3 +78,22 @@ test("TE40 the deals and organizations lists show their own second line and amou
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Organizations" })).toBeVisible();
 });
+
+test("TE40 every field in the Add deal form fits inside the form", async ({ page }) => {
+  await page.goto("/deals");
+  await page.getByRole("button", { name: "Add deal" }).click();
+  const form = page.getByRole("dialog", { name: "Add deal" });
+  await expect(form.getByLabel("Close date")).toBeVisible();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+  const outside = await form.evaluate((dialog) => {
+    const edge = dialog.getBoundingClientRect();
+    return [...dialog.querySelectorAll<HTMLElement>("input, select, textarea")]
+      .filter((field) => field.offsetParent !== null)
+      .filter((field) => {
+        const box = field.getBoundingClientRect();
+        return box.left < edge.left || box.right > edge.right + 0.5;
+      })
+      .map((field) => field.id || field.getAttribute("name"));
+  });
+  expect(outside, "fields past the form's edge").toEqual([]);
+});
