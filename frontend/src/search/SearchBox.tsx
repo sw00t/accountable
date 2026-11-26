@@ -10,6 +10,8 @@ import { useSearch, type Found, type SearchResults } from "./useSearch";
 import "./search.css";
 
 export const PLACEHOLDER = "Search organizations, contacts and deals";
+/** F8: full screen on a phone the box is too narrow for the laptop's words. */
+export const PHONE_PLACEHOLDER = "Search everything";
 
 type Result = { key: string; name: string; detail: string | null; path: string };
 
@@ -206,7 +208,7 @@ function SearchField({ fullScreen, onClose }: FieldProps) {
           ref={input}
           type="text"
           role="combobox"
-          placeholder={PLACEHOLDER}
+          placeholder={fullScreen ? PHONE_PLACEHOLDER : PLACEHOLDER}
           autoComplete="off"
           spellCheck={false}
           value={text}

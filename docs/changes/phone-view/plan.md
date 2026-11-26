@@ -129,6 +129,8 @@ Three choices keep the parts apart and the laptop unchanged:
 | `frontend/src/account/UserMenu.tsx`, `account.css` | U13: the initials circle beside the name in the sheet, and the theme choice as one 44 px control with the chosen one ringed | [W4.2](#w4-2) | Changed |
 | `frontend/src/dashboard/dashboard-phone.css` | Follow-up and activity descriptions run to two lines; panels with 14 px padding | [W4.2](#w4-2) | Changed |
 | `frontend/src/test-setup.ts` | `setPhone("landscape")`, so unit tests can cover landscape | [W4.2](#w4-2) | Changed |
+| `frontend/src/shared/topBarSlot.ts`, `Layout.tsx`, `TopBar.tsx`, `PageHeader.tsx` | The product owner's choice: in landscape the top bar reads title, filters, search, then the main action, through a second slot after the search button, so the order read and tabbed to is the order seen (N6). `TopBarPhone.test.tsx` checks both orientations | [W4.2](#w4-2) | Changed, one test new |
+| `frontend/src/search/SearchBox.tsx` | The product owner's choice: full-screen search on a phone says "Search everything" (F8) | [W4.2](#w4-2) | Changed |
 | `e2e/phone/journeys.spec.ts` | TE41, TE43 and TE44 run at every size (W4.1), and TE41 checks search covers the tab bar | [W4.1](#w4-1) | Changed |
 
 ### Docs and harness

@@ -39,6 +39,6 @@ A deal's second line is its organization and stage separated by a middle dot ("G
 
 Nothing is highlighted until an arrow key is pressed. Down and Up wrap around the list, Up with nothing highlighted goes to the last result, and Down opens the results again after Escape. Enter with nothing highlighted does nothing. Escape closes the results and keeps the typed text. Going to another page, through a sidebar link, the back button or any other way, clears the box and closes the results; a change only to the address's query, such as a table filter, doesn't count as another page. Moving focus away from the box closes the results, and focusing it again opens them.
 
-**Search on a phone (F8).** The box fills the width less the Cancel button, 44 px high, on the panel color. Results are rows at least 52 px high, with the same icon, name and second line as on a laptop, and the screen scrolls when they don't fit.
+**Search on a phone (F8).** The box fills the width less the Cancel button, 44 px high, on the panel color, with the shorter placeholder "Search everything", since F1's doesn't fit a phone's width. Results are rows at least 52 px high, with the same icon, name and second line as on a laptop, and the screen scrolls when they don't fit.
 
 When a search fails, the results panel says "Couldn't search." followed by the usual detail (G8). For screen readers (F6), a hidden status reads the total number of matches as "N results", or the no-results text, and each group is named.

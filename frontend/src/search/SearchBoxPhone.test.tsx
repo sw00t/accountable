@@ -50,6 +50,8 @@ test("the button opens search full screen with the box focused", async () => {
   await openSearch();
   expect(screen.getByRole("search")).toHaveClass("full");
   expect(screen.getByRole("combobox", { name: "Search" })).toHaveFocus();
+  // F8: a placeholder short enough for a phone's width.
+  expect(screen.getByRole("combobox")).toHaveAttribute("placeholder", "Search everything");
 });
 
 test("choosing a result opens it and closes search", async () => {

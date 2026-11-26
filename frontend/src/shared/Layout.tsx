@@ -4,24 +4,31 @@ import { usePhoneShape } from "./phone";
 import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { TopBar } from "./TopBar";
-import { TopBarSlot } from "./topBarSlot";
+import { TopBarActionSlot, TopBarSlot } from "./topBarSlot";
 
 export function Layout() {
   const shape = usePhoneShape();
   const phone = shape !== null;
+  const landscape = shape === "landscape";
   const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const [actionSlot, setActionSlot] = useState<HTMLElement | null>(null);
   return (
     <TopBarSlot.Provider value={phone ? slot : null}>
-      <div className={phone ? `app phone ${shape}` : "app"}>
-        {!phone && <Sidebar />}
-        <div className="workspace">
-          <TopBar titleSlot={phone ? setSlot : undefined} />
-          <main>
-            <Outlet />
-          </main>
+      <TopBarActionSlot.Provider value={landscape ? actionSlot : null}>
+        <div className={phone ? `app phone ${shape}` : "app"}>
+          {!phone && <Sidebar />}
+          <div className="workspace">
+            <TopBar
+              titleSlot={phone ? setSlot : undefined}
+              actionSlot={landscape ? setActionSlot : undefined}
+            />
+            <main>
+              <Outlet />
+            </main>
+          </div>
+          {phone && <TabBar />}
         </div>
-        {phone && <TabBar />}
-      </div>
+      </TopBarActionSlot.Provider>
     </TopBarSlot.Provider>
   );
 }

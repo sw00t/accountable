@@ -109,6 +109,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .topbar-action {
+    flex: none;
+    display: flex;
+  }
+
   /* Full-screen search sits above the tab bar too, so the top bar it lives in is raised with it. */
   .topbar:has(.top-search.full) {
     z-index: 80;
