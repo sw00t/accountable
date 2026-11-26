@@ -614,6 +614,10 @@ All six findings were fixed:
 
 Committed as `0ccf8c9` and merged into `main` on 25 Nov, before its harness round (see "After multi-user" under Harness improvements).
 
+## A phone view (phone-view)
+
+- **Plan:** `docs/changes/phone-view/intent.md` is agreed. Everything that works on a laptop works on a phone, and the pipeline shows one stage at a time with a "Move to" choice on each card. At phone widths only, Dark is AMOLED dark with a true black page, and the default. The product owner signs off portrait and landscape on a real phone. The product owner reviews each stage before the next starts.
+
 ## Ideas for later
 
 - The revenue line chart isn't very pleasant to look at; try other graph and chart types for it.
