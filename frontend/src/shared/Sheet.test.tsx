@@ -79,3 +79,19 @@ test("dragging the handle down far enough closes it; a short drag doesn't", asyn
   drag(handle, 80);
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
+
+test("a re-render of its owner leaves focus where the person put it", async () => {
+  // A new onClose on each render, as an inline arrow function gives.
+  const sheet = (count: number) => (
+    <Sheet title="Sort by" open onClose={() => count}>
+      <button type="button">First</button>
+      <button type="button">Second</button>
+    </Sheet>
+  );
+  const { rerender } = render(sheet(1));
+  expect(screen.getByRole("button", { name: "First" })).toHaveFocus();
+  screen.getByRole("button", { name: "Second" }).focus();
+  rerender(sheet(2));
+  expect(screen.getByRole("button", { name: "Second" })).toHaveFocus();
+  expect(document.body.style.overflow).toBe("hidden");
+});

@@ -68,12 +68,14 @@ export function PhonePipeline() {
   const choose = (next: Stage) => setParams({ stage: next }, { replace: true });
   const toStage = (id: number, next: Stage) => {
     const name = byId.get(id)?.name;
-    if (send(deals, moveToStage(deals, id, next))) {
-      toast.success(`Moved ${name} to ${stageInfo(next).label}`);
-    }
+    // P11: the message says where the card went once it's saved; a failure says why instead.
+    void send(deals, moveToStage(deals, id, next))?.then(
+      (saved) => saved && toast.success(`Moved ${name} to ${stageInfo(next).label}`),
+    );
   };
+
   const within = (id: number, step: -1 | 1) => () =>
-    send(deals, moveWithin(deals, visible, id, step));
+    void send(deals, moveWithin(deals, visible, id, step));
 
   const stageBar = (
     <div className="stage-bar">

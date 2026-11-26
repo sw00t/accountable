@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import { ActivityIcon } from "../activities/ActivityIcon";
@@ -16,10 +17,28 @@ function RecordLink({ contact, deal }: { contact: Ref; deal: Ref }) {
   return null;
 }
 
-/** H7, A6: overdue first, then the next 7 days, each with Mark done. */
+/**
+ * H7, A6: overdue first, then the next 7 days, each with Mark done. Several can be saving at
+ * once, so each keeps its own promise for its message and its button: `mutate`'s per-call
+ * callbacks run only for the latest call, which would lose an earlier one's error.
+ */
 export function FollowUps({ items, today }: { items: Dashboard["follow_ups"]; today: string }) {
   const toast = useToast();
-  const markDone = useMarkDone();
+  const { mutateAsync } = useMarkDone();
+  const [saving, setSaving] = useState<Set<number>>(new Set());
+  const markDone = (id: number) => {
+    setSaving((s) => new Set(s).add(id));
+    mutateAsync(id)
+      .then(() => toast.success("Follow-up marked done."))
+      .catch((error: unknown) => toast.error(failureMessage("mark the follow-up done", error)))
+      .finally(() =>
+        setSaving((s) => {
+          const next = new Set(s);
+          next.delete(id);
+          return next;
+        }),
+      );
+  };
   if (!items.length)
     return <p className="muted">No follow-ups overdue or due in the next 7 days.</p>;
   return (
@@ -36,13 +55,8 @@ export function FollowUps({ items, today }: { items: Dashboard["follow_ups"]; to
             type="button"
             className="mini"
             aria-label={`Mark done: ${f.description}`}
-            disabled={markDone.isPending && markDone.variables === f.id}
-            onClick={() =>
-              markDone.mutate(f.id, {
-                onSuccess: () => toast.success("Follow-up marked done."),
-                onError: (error) => toast.error(failureMessage("mark the follow-up done", error)),
-              })
-            }
+            disabled={saving.has(f.id)}
+            onClick={() => markDone(f.id)}
           >
             <Check size={13} aria-hidden="true" />
             Mark done

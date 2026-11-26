@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import "./tables-phone.css";
 
@@ -33,6 +33,12 @@ function focusFirstField(panel: HTMLElement): () => void {
 export function SidePanel({ title, open, onClose, children }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const returnTo = useRef<Element | null>(null);
+  // The latest onClose, so a parent's new function on each render doesn't re-run the opening
+  // effect and pull focus back to the first field.
+  const close = useRef(onClose);
+  useLayoutEffect(() => {
+    close.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -41,7 +47,7 @@ export function SidePanel({ title, open, onClose, children }: Props) {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onClose();
+        close.current();
       }
     };
     document.addEventListener("keydown", onKey);
@@ -50,7 +56,7 @@ export function SidePanel({ title, open, onClose, children }: Props) {
       document.removeEventListener("keydown", onKey);
       if (returnTo.current instanceof HTMLElement) returnTo.current.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (

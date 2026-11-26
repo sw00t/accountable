@@ -64,28 +64,34 @@ export function useMoveDeal() {
 /**
  * Sends a move from a drop or the Move to sheet (P6, P11): nothing when the card stays where it
  * was, and one move at a time per card, so a second waits for the first to save (R6). `saving`
- * holds the cards whose move hasn't saved yet. Returns whether the move was sent.
+ * holds the cards whose move hasn't saved yet. Returns null when nothing was sent, or a promise
+ * that says whether the move saved.
+ *
+ * Each move's own promise clears its card, since `mutate`'s per-call callbacks run only for the
+ * latest call: with two cards saving at once, the first would stay "saving" for good.
  */
 export function useSendMove() {
   const move = useMoveDeal();
   const [saving, setSaving] = useState<Set<number>>(new Set());
-  const { mutate } = move;
+  const { mutateAsync } = move;
   const send = useCallback(
-    (deals: DealRow[], result: Move | null) => {
-      if (!result || isNoMove(deals, result) || saving.has(result.id)) return false;
+    (deals: DealRow[], result: Move | null): Promise<boolean> | null => {
+      if (!result || isNoMove(deals, result) || saving.has(result.id)) return null;
       const { id } = result;
       setSaving((s) => new Set(s).add(id));
-      mutate(result, {
-        onSettled: () =>
+      // A failure is already shown by useMoveDeal's onError, so here it only means "not saved".
+      return mutateAsync(result)
+        .then(() => true)
+        .catch(() => false)
+        .finally(() =>
           setSaving((s) => {
             const next = new Set(s);
             next.delete(id);
             return next;
           }),
-      });
-      return true;
+        );
     },
-    [mutate, saving],
+    [mutateAsync, saving],
   );
   return { saving, send };
 }

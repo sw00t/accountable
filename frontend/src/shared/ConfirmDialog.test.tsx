@@ -56,3 +56,20 @@ test("the dialog asks first and confirms or cancels", async () => {
   await userEvent.click(screen.getByRole("button", { name: "Delete organization" }));
   expect(onConfirm).toHaveBeenCalled();
 });
+
+test("a re-render of its owner leaves focus on the button the person reached", () => {
+  // A new onCancel on each render, as an inline arrow function gives.
+  const dialog = (count: number) => (
+    <ConfirmDialog
+      title="Delete this activity?"
+      message="This can't be undone."
+      confirmLabel="Delete activity"
+      onConfirm={() => {}}
+      onCancel={() => count}
+    />
+  );
+  const { rerender } = render(dialog(1));
+  screen.getByRole("button", { name: "Delete activity" }).focus();
+  rerender(dialog(2));
+  expect(screen.getByRole("button", { name: "Delete activity" })).toHaveFocus();
+});

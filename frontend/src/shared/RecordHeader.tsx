@@ -1,4 +1,4 @@
-import { useContext, useState, type ReactNode } from "react";
+import { useCallback, useContext, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, Mail, Phone, Plus, Trash2 } from "lucide-react";
@@ -68,7 +68,7 @@ function PhoneRecordHeader({
   // The first page of a visit has no history to go back to inside the app.
   const firstPage = useLocation().key === "default";
   const [logging, setLogging] = useState(false);
-  const closeLog = () => setLogging(false);
+  const closeLog = useCallback(() => setLogging(false), []);
 
   const bar = (
     <div className="record-bar">

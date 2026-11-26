@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type PointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 type Props = {
@@ -26,6 +26,12 @@ const DRAG_TO_CLOSE = 60;
 export function Sheet({ title, open, onClose, children, full = false, heading = true }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragFrom = useRef<number | null>(null);
+  // The latest onClose, so a parent's new function on each render doesn't re-run the opening
+  // effect, which would pull focus back to the first control.
+  const close = useRef(onClose);
+  useLayoutEffect(() => {
+    close.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -35,7 +41,7 @@ export function Sheet({ title, open, onClose, children, full = false, heading = 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onClose();
+        close.current();
       }
     };
     const overflow = document.body.style.overflow;
@@ -46,7 +52,7 @@ export function Sheet({ title, open, onClose, children, full = false, heading = 
       document.body.style.overflow = overflow;
       if (returnTo instanceof HTMLElement) returnTo.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

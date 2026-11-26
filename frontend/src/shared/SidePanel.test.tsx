@@ -58,3 +58,21 @@ test("a click outside the panel closes it; a click inside doesn't", async () => 
   await userEvent.click(panel.parentElement!);
   expect(onClose).toHaveBeenCalledOnce();
 });
+
+test("a re-render of its owner leaves focus in the field the person is in", () => {
+  // A new onClose on each render, as an inline arrow function gives.
+  const panel = (count: number) => (
+    <SidePanel title="Log activity" open onClose={() => count}>
+      <label>
+        What happened <input />
+      </label>
+      <label>
+        Follow-up date <input />
+      </label>
+    </SidePanel>
+  );
+  const { rerender } = render(panel(1));
+  screen.getByLabelText("Follow-up date").focus();
+  rerender(panel(2));
+  expect(screen.getByLabelText("Follow-up date")).toHaveFocus();
+});

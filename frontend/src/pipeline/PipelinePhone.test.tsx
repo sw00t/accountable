@@ -235,3 +235,52 @@ test("with a search on, the tabs count and the sheet moves past the cards shown"
   await waitFor(() => expect(posts(calls)).toHaveLength(1));
   expect(posts(calls)[0].body).toEqual({ stage: "new", after_id: null, before_id: 1 });
 });
+
+/** Holds every POST until `release` is called, so moves can be saving at the same time. */
+function holdMoves() {
+  const inner = globalThis.fetch;
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string, init: RequestInit = {}) => {
+      if (init.method === "POST") await gate;
+      return inner(url, init);
+    }),
+  );
+  return () => release();
+}
+
+test("two cards saving at once both finish saving and can be moved again (R6)", async () => {
+  const calls = open("/pipeline", server());
+  const release = holdMoves();
+  await moveTo("Fleet renewal");
+  await userEvent.click(within(sheet("Fleet renewal")).getByRole("button", { name: "Won" }));
+  await moveTo("Van hire");
+  await userEvent.click(within(sheet("Van hire")).getByRole("button", { name: "Won" }));
+  release();
+  await waitFor(() => expect(posts(calls)).toHaveLength(2));
+  await userEvent.click(screen.getByRole("tab", { name: /^Won/ }));
+  await waitFor(async () =>
+    expect(await shown()).toEqual(["Van hire", "Fleet renewal", "Spare parts"]),
+  );
+  await waitFor(() => expect(document.querySelectorAll(".card.saving")).toHaveLength(0), {
+    timeout: 300,
+  });
+  // A card whose save has finished moves again.
+  await moveTo("Fleet renewal");
+  await userEvent.click(within(sheet("Fleet renewal")).getByRole("button", { name: "Lost" }));
+  await waitFor(() => expect(posts(calls)).toHaveLength(3));
+});
+
+test("a failed move says why and never says it moved (P11)", async () => {
+  open("/pipeline", {
+    "POST /deals/2/move": () => ({ status: 409, body: { message: "That deal has changed." } }),
+  });
+  await moveTo("Lorry hire");
+  await userEvent.click(within(sheet("Lorry hire")).getByRole("button", { name: "Won" }));
+  expect(
+    await screen.findByText("Couldn't move Lorry hire. That deal has changed."),
+  ).toBeInTheDocument();
+  expect(screen.queryByText("Moved Lorry hire to Won")).not.toBeInTheDocument();
+});

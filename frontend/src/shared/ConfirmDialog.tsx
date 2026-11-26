@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { Schemas } from "./api";
 import { plural } from "./format";
 import "./tables-phone.css";
@@ -15,13 +15,19 @@ type Props = {
 /** Asks before deleting, naming the record and what happens to linked records (T6). */
 export function ConfirmDialog({ title, message, confirmLabel, busy, onConfirm, onCancel }: Props) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  // The latest onCancel, so a parent's new function on each render doesn't re-run the effect
+  // and pull focus back to Cancel.
+  const cancel = useRef(onCancel);
+  useLayoutEffect(() => {
+    cancel.current = onCancel;
+  });
   useEffect(() => {
     const returnTo = document.activeElement;
     cancelRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onCancel();
+        cancel.current();
       }
     };
     document.addEventListener("keydown", onKey);
@@ -29,7 +35,7 @@ export function ConfirmDialog({ title, message, confirmLabel, busy, onConfirm, o
       document.removeEventListener("keydown", onKey);
       if (returnTo instanceof HTMLElement) returnTo.focus();
     };
-  }, [onCancel]);
+  }, []);
 
   return (
     <div className="overlay center">

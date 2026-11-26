@@ -227,6 +227,33 @@ test("a Mark done that fails says why", async () => {
   ).toBeInTheDocument();
 });
 
+test("two Mark dones at once each say how they went, the first one failing", async () => {
+  mockApi({
+    "GET /dashboard": dashboard(),
+    "PATCH /activities/40": () => ({ status: 404, body: { message: "That follow-up is gone." } }),
+    "PATCH /activities/41": { id: 41 },
+  });
+  // Hold the first save until the second has been sent, so both are saving at once.
+  const inner = globalThis.fetch;
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string, init: RequestInit = {}) => {
+      if (url.endsWith("/activities/40")) await gate;
+      return inner(url, init);
+    }),
+  );
+  renderApp("/");
+  await userEvent.click(await screen.findByRole("button", { name: "Mark done: Call Ann back" }));
+  await userEvent.click(screen.getByRole("button", { name: "Mark done: Check the contract" }));
+  expect(await screen.findByText("Follow-up marked done.")).toBeInTheDocument();
+  release();
+  expect(
+    await screen.findByText("Couldn't mark the follow-up done. That follow-up is gone."),
+  ).toBeInTheDocument();
+});
+
 test("a dashboard that fails to load says so", async () => {
   mockApi({ "GET /dashboard": () => ({ status: 500, body: { message: "boom" } }) });
   renderApp("/");

@@ -177,7 +177,7 @@ function Board() {
     setActiveId(null);
     setDragColumns(null);
     const dropped = moveFrom(finalColumns, id);
-    send(deals, dropped && withHiddenCards(deals, dropped));
+    void send(deals, dropped && withHiddenCards(deals, dropped));
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
