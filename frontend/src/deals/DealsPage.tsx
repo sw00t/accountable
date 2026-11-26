@@ -8,7 +8,7 @@ import { LoadError, Loading } from "../shared/Loading";
 import { AddButton } from "../shared/AddButton";
 import { PageHeader } from "../shared/PageHeader";
 import { SidePanel } from "../shared/SidePanel";
-import { STAGES, stageLabel, type Stage } from "../shared/stages";
+import { STAGES, stageFromParam, stageLabel, type Stage } from "../shared/stages";
 import { DealForm } from "./DealForm";
 import { StagePill } from "./StagePill";
 import { useDeals, type DealRow } from "./hooks";
@@ -71,11 +71,6 @@ const COLUMNS: TableColumn<DealRow>[] = [
     cell: ({ getValue }) => formatDate(getValue<string | null>()),
   },
 ];
-
-/** The stage filter from the address, ignoring anything that isn't a stage. */
-function stageFromParam(raw: string | null): Stage | null {
-  return STAGES.some((s) => s.key === raw) ? (raw as Stage) : null;
-}
 
 function dealCount(total: number, stage: Stage | null) {
   return stage ? `${plural(total, "deal")} in ${stageLabel(stage)}` : plural(total, "deal");

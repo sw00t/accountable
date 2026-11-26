@@ -25,12 +25,12 @@ import { DealForm } from "../deals/DealForm";
 import { money, plural } from "../shared/format";
 import { LoadError, Loading } from "../shared/Loading";
 import { PageHeader } from "../shared/PageHeader";
+import { usePhone } from "../shared/phone";
 import { SidePanel } from "../shared/SidePanel";
 import { STAGES, stageLabel, type Stage } from "../shared/stages";
 import {
   boardTotals,
   buildColumns,
-  isNoMove,
   matches,
   moveFrom,
   totals,
@@ -39,7 +39,8 @@ import {
 } from "./board";
 import { Column } from "./Column";
 import { DealCard } from "./DealCard";
-import { useMoveDeal } from "./hooks";
+import { useSendMove } from "./hooks";
+import { PhonePipeline } from "./PhonePipeline";
 
 const isStage = (id: UniqueIdentifier): id is Stage => typeof id === "string";
 
@@ -50,16 +51,20 @@ function columnOf(columns: Columns, id: UniqueIdentifier): Stage | null {
   );
 }
 
-/** P1 to P8: the deals as cards, one column per stage, moved by mouse or keyboard. */
+/** The board: every stage side by side on a laptop, one at a time on a phone (P9). */
 export function PipelinePage() {
+  return usePhone() ? <PhonePipeline /> : <Board />;
+}
+
+/** P1 to P8: the deals as cards, one column per stage, moved by mouse or keyboard. */
+function Board() {
   const navigate = useNavigate();
   const query = useDeals();
-  const move = useMoveDeal();
+  const { saving, send } = useSendMove();
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState<Stage | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [dragColumns, setDragColumns] = useState<Columns | null>(null);
-  const [saving, setSaving] = useState<Set<number>>(new Set());
   const closeAdd = useCallback(() => setAdding(null), []);
   const lastOverId = useRef<UniqueIdentifier | null>(null);
   const justChangedColumn = useRef(false);
@@ -172,18 +177,7 @@ export function PipelinePage() {
     setActiveId(null);
     setDragColumns(null);
     const dropped = moveFrom(finalColumns, id);
-    const result = dropped && withHiddenCards(deals, dropped);
-    // R6: one move at a time per card; a second drop waits for the first to save.
-    if (!result || isNoMove(deals, result) || saving.has(id)) return;
-    setSaving((s) => new Set(s).add(id));
-    move.mutate(result, {
-      onSettled: () =>
-        setSaving((s) => {
-          const next = new Set(s);
-          next.delete(id);
-          return next;
-        }),
-    });
+    send(deals, dropped && withHiddenCards(deals, dropped));
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {

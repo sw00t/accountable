@@ -1,0 +1,170 @@
+/*
+ * The dashboard on a phone (H9, spec Dashboard on a phone): one column in portrait in H9's
+ * order, two in landscape. The markup keeps the laptop's order; the grid's `order` sets the
+ * phone's. The query is PHONE_QUERY in shared/phone.ts.
+ */
+@media (max-width: 767px), (orientation: landscape) and (max-height: 499px) {
+  .tiles {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .tile {
+    padding: 14px;
+    min-width: 0;
+  }
+  .tile-label {
+    font-size: 13px;
+  }
+  .tile-value {
+    font-size: 22px;
+    margin: 6px 0 2px;
+  }
+  .tile .muted {
+    font-size: 12px;
+  }
+
+  .dash-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .dash-grid > .panel {
+    grid-column: auto;
+    min-width: 0;
+    padding: 16px;
+  }
+  .dash-revenue {
+    order: 1;
+  }
+  .dash-follow {
+    order: 2;
+  }
+  .dash-recent {
+    order: 3;
+  }
+  .dash-stages {
+    order: 4;
+  }
+  .dash-funnel {
+    order: 5;
+  }
+  .dash-wonlost {
+    order: 6;
+  }
+  .dash-grid .panel-head {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+
+  /* The funnel: each stage's name and count above its bar, the value on the right. */
+  .step {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name pct"
+      "bar bar";
+    gap: 4px 10px;
+  }
+  .step .name {
+    grid-area: name;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+  }
+  .step .name .muted {
+    display: inline;
+  }
+  .step > div {
+    grid-area: bar;
+  }
+  .step .bar {
+    height: 20px;
+  }
+  .step .pct {
+    grid-area: pct;
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+  }
+  .step .pct b {
+    display: inline;
+  }
+
+  /* The stage bars: name and value on one line, the bar under them. */
+  .s-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name val"
+      "track track";
+    gap: 6px 10px;
+    min-height: 44px;
+  }
+  .s-name {
+    grid-area: name;
+  }
+  .s-track {
+    grid-area: track;
+    height: 18px;
+  }
+  .s-val {
+    grid-area: val;
+    font-size: 12px;
+  }
+
+  /*
+   * Follow-ups and recent activity: rows at least 56 px high. The date sits top right, with
+   * Mark done, a 44 px button, under it, so a row keeps to its own lines.
+   */
+  .dash-grid .list li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "icon main when"
+      "icon main done";
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 2px;
+    min-height: 56px;
+    padding: 6px 0;
+  }
+  .dash-grid .list .li-icon {
+    grid-area: icon;
+  }
+  .dash-grid .li-main {
+    grid-area: main;
+  }
+  .dash-grid .list .chip,
+  .dash-grid .list .when {
+    grid-area: when;
+    justify-self: end;
+  }
+  /* Recent activity has no Mark done, so its time sits in the middle of the row. */
+  .dash-grid .list .when {
+    grid-row: 1 / -1;
+  }
+  /* N3: the record links and View board are 44 px tap targets. */
+  .dash-grid .li-main a,
+  .dash-grid .panel-head a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .dash-grid .list .mini {
+    grid-area: done;
+    justify-self: end;
+    min-height: 44px;
+    padding: 0 12px;
+  }
+
+  /* Landscape: two columns, the revenue chart and won and lost across both. */
+  .app.landscape .tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .app.landscape .dash-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app.landscape .dash-revenue,
+  .app.landscape .dash-wonlost {
+    grid-column: 1 / -1;
+  }
+}

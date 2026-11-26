@@ -77,3 +77,8 @@ export const STATUSES: { key: Status; label: string }[] = [
 export function statusLabel(status: Status): string {
   return STATUSES.find((s) => s.key === status)!.label;
 }
+
+/** A stage from the address, ignoring anything that isn't a stage. */
+export function stageFromParam(raw: string | null): Stage | null {
+  return STAGES.some((s) => s.key === raw) ? (raw as Stage) : null;
+}

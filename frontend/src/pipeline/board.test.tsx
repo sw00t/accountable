@@ -11,8 +11,11 @@ import {
   buildColumns,
   isNoMove,
   moveFrom,
+  moveToStage,
+  moveWithin,
   totals,
   withHiddenCards,
+  type Columns,
 } from "./board";
 import { BOARD_KEY, useMoveDeal } from "./hooks";
 
@@ -357,4 +360,79 @@ test("TF15 moves save one after another, but each card moves on the board at onc
   releaseFirst();
   await waitFor(() => expect(second.current.isSuccess).toBe(true));
   expect(sent).toEqual([2, 3]);
+});
+
+describe("TF42 Move to, Move up and Move down give the move a drop gives", () => {
+  // New holds 1, 2 and 5 in that order, Proposal holds 3; a search hides 2.
+  const board = [...deals, deal(5, "new", 3, 500, 10)];
+  const shown = board.filter((d) => d.id !== 2);
+  /** The move a drop gives once the visible cards are in `order` (P4). */
+  const dropped = (order: Partial<Columns>, id: number) =>
+    withHiddenCards(board, moveFrom({ ...buildColumns(shown), ...order }, id)!);
+
+  test("Move to puts the card at the top of the new stage", () => {
+    expect(moveToStage(board, 5, "proposal")).toEqual({
+      id: 5,
+      stage: "proposal",
+      afterId: null,
+      beforeId: 3,
+    });
+    expect(moveToStage(board, 3, "won")).toEqual({
+      id: 3,
+      stage: "won",
+      afterId: null,
+      beforeId: 4,
+    });
+    expect(moveToStage(board, 3, "lost")).toEqual({
+      id: 3,
+      stage: "lost",
+      afterId: null,
+      beforeId: null,
+    });
+    expect(moveToStage(board, 3, "proposal")).toBeNull();
+  });
+
+  test("Move to with a search on still goes to the very top, above hidden cards", () => {
+    expect(moveToStage(board, 3, "new")).toEqual({
+      id: 3,
+      stage: "new",
+      afterId: null,
+      beforeId: 1,
+    });
+  });
+
+  test("Move up and Move down step one place, with no search", () => {
+    expect(moveWithin(board, board, 2, -1)).toEqual({
+      id: 2,
+      stage: "new",
+      afterId: null,
+      beforeId: 1,
+    });
+    expect(moveWithin(board, board, 2, 1)).toEqual({
+      id: 2,
+      stage: "new",
+      afterId: 5,
+      beforeId: null,
+    });
+  });
+
+  test("with a search on they pass the next visible card, as a drop there does", () => {
+    // Shown: 1 then 5. Down from 1 lands under 5; up from 5 lands at the top, above hidden 2.
+    const down = moveWithin(board, shown, 1, 1);
+    expect(down).toEqual(dropped({ new: [5, 1] }, 1));
+    expect(down).toEqual({ id: 1, stage: "new", afterId: 5, beforeId: null });
+    const up = moveWithin(board, shown, 5, -1);
+    expect(up).toEqual(dropped({ new: [5, 1] }, 5));
+    expect(up).toEqual({ id: 5, stage: "new", afterId: null, beforeId: 1 });
+    expect(isNoMove(board, up!)).toBe(false);
+    expect(applyMove(board, up!, "2026-11-16").find((d) => d.id === 5)!.position).toBe(0);
+  });
+
+  test("there's no move up from the first place or down from the last", () => {
+    expect(moveWithin(board, board, 1, -1)).toBeNull();
+    expect(moveWithin(board, board, 5, 1)).toBeNull();
+    expect(moveWithin(board, shown, 5, 1)).toBeNull();
+    expect(moveWithin(board, board, 3, 1)).toBeNull();
+    expect(moveWithin(board, shown, 2, 1)).toBeNull();
+  });
 });

@@ -13,7 +13,8 @@ type Props = {
   heading?: boolean;
 };
 
-const FOCUSABLE = "input:not([type=hidden]), select, textarea, button, a[href], [tabindex='0']";
+const FOCUSABLE =
+  "input:not([type=hidden]), select, textarea, button:not(:disabled), a[href], [tabindex='0']";
 /** How far the handle must be dragged down to close the sheet, in pixels. */
 const DRAG_TO_CLOSE = 60;
 

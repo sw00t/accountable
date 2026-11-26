@@ -5,6 +5,8 @@ import type { Schemas } from "../shared/api";
 import { longDate } from "../shared/format";
 import { mockApi, renderApp } from "../shared/test-utils";
 import { localToday } from "../shared/today";
+import { setPhone } from "../test-setup";
+import { monthTicks } from "./Charts";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -231,4 +233,50 @@ test("a dashboard that fails to load says so", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent(
     /Couldn't load this dashboard\. Something went wrong in Accountable/,
   );
+});
+
+describe("TF46 the dashboard on a phone (H9)", () => {
+  const months = [
+    "2025-12",
+    "2026-01",
+    "2026-02",
+    "2026-03",
+    "2026-04",
+    "2026-05",
+    "2026-06",
+    "2026-07",
+    "2026-08",
+    "2026-09",
+    "2026-10",
+    "2026-11",
+  ];
+  const labels = (phone: boolean) => months.map(monthTicks(months.length, phone));
+
+  test("every third month is labelled, counting back from this month", () => {
+    expect(labels(true)).toEqual(["", "", "Feb", "", "", "May", "", "", "Aug", "", "", "Nov"]);
+    expect(labels(false).every(Boolean)).toBe(true);
+  });
+
+  test("everything on the laptop's dashboard is still there, Mark done included", async () => {
+    setPhone(true);
+    mockApi({ "GET /dashboard": dashboard() });
+    renderApp("/");
+    expect(await tiles()).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("region").map((region) => region.getAttribute("aria-label")),
+    ).toEqual([
+      "Headline figures",
+      "Revenue won",
+      "Sales funnel",
+      "Open pipeline by stage",
+      "Deals won and lost",
+      "Follow-ups",
+      "Recent activity",
+    ]);
+    expect(screen.getAllByRole("img", { name: /per month/ })).toHaveLength(2);
+    const followUps = screen.getByRole("region", { name: "Follow-ups" });
+    expect(within(followUps).getByRole("button", { name: "Mark done: Call Ann back" })).toHaveClass(
+      "mini",
+    );
+  });
 });

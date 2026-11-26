@@ -65,6 +65,35 @@ export function withHiddenCards(deals: DealRow[], move: Move): Move {
   return { ...move, beforeId: column[index + 1] ?? null };
 }
 
+/** P10: a card sent to the top of another stage from the Move to sheet; none for its own stage. */
+export function moveToStage(deals: DealRow[], id: number, stage: Stage): Move | null {
+  const deal = deals.find((d) => d.id === id);
+  if (!deal || deal.stage === stage) return null;
+  return withHiddenCards(deals, { id, stage, afterId: null, beforeId: null });
+}
+
+/**
+ * P10: a card moved one place up (-1) or down (1) among the visible cards of its stage, giving
+ * the same move a drop at that place gives, past hidden cards as P4 says. None at either end.
+ */
+export function moveWithin(
+  deals: DealRow[],
+  visible: DealRow[],
+  id: number,
+  step: -1 | 1,
+): Move | null {
+  const deal = deals.find((d) => d.id === id);
+  if (!deal) return null;
+  const column = buildColumns(visible)[deal.stage];
+  const from = column.indexOf(id);
+  const to = from + step;
+  if (from === -1 || to < 0 || to >= column.length) return null;
+  const order = column.filter((card) => card !== id);
+  order.splice(to, 0, id);
+  const dropped = moveFrom({ ...buildColumns([]), [deal.stage]: order }, id);
+  return dropped && withHiddenCards(deals, dropped);
+}
+
 /** True when a move leaves the card where it was. */
 export function isNoMove(deals: DealRow[], move: Move): boolean {
   const before = moveFrom(buildColumns(deals), move.id);

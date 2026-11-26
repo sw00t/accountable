@@ -1,9 +1,10 @@
+import { useCallback, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, failureMessage, type Schemas } from "../shared/api";
 import { useToast } from "../shared/Toast";
 import { localToday } from "../shared/today";
 import type { DealRow } from "../deals/hooks";
-import { applyMove, type Move } from "./board";
+import { applyMove, isNoMove, type Move } from "./board";
 
 export const BOARD_KEY = ["deals", "all"] as const;
 const MOVE_KEY = ["move-deal"] as const;
@@ -58,4 +59,33 @@ export function useMoveDeal() {
       if (client.isMutating({ mutationKey: MOVE_KEY }) <= 1) return client.invalidateQueries();
     },
   });
+}
+
+/**
+ * Sends a move from a drop or the Move to sheet (P6, P11): nothing when the card stays where it
+ * was, and one move at a time per card, so a second waits for the first to save (R6). `saving`
+ * holds the cards whose move hasn't saved yet. Returns whether the move was sent.
+ */
+export function useSendMove() {
+  const move = useMoveDeal();
+  const [saving, setSaving] = useState<Set<number>>(new Set());
+  const { mutate } = move;
+  const send = useCallback(
+    (deals: DealRow[], result: Move | null) => {
+      if (!result || isNoMove(deals, result) || saving.has(result.id)) return false;
+      const { id } = result;
+      setSaving((s) => new Set(s).add(id));
+      mutate(result, {
+        onSettled: () =>
+          setSaving((s) => {
+            const next = new Set(s);
+            next.delete(id);
+            return next;
+          }),
+      });
+      return true;
+    },
+    [mutate, saving],
+  );
+  return { saving, send };
 }

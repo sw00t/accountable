@@ -86,21 +86,24 @@ Three choices keep the parts apart and the laptop unchanged:
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
 | `frontend/src/pipeline/board.ts` | Pure functions for P10: `moveToStage` (the top of the new stage) and `moveWithin` (up or down one visible card, past cards a search hides as P4's drop does), each giving the same `Move` a drop gives, or none at the first or last place | [W3.1](#w3-1) | Changed |
-| `frontend/src/pipeline/PipelinePage.tsx` | On a phone: the stage tabs and one `Column`, the stage kept in the address (`?stage=`), no drag sensors, and moves from the sheet sent through the same `useMoveDeal` path as a drop (P6, P11), with the "Moved … to …" toast | [W3.1](#w3-1) | Changed |
+| `frontend/src/pipeline/PipelinePage.tsx` | Renders `PhonePipeline` on a phone and the drag board on a laptop; the board sends its drops through `useSendMove` | [W3.1](#w3-1) | Changed |
+| `frontend/src/pipeline/PhonePipeline.tsx` | On a phone: the stage tabs and one stage's cards, the stage kept in the address (`?stage=`), no drag sensors, the open totals under the title, and moves from the sheet sent through `useSendMove` as a drop's are (P6, P11), with the "Moved … to …" toast. In landscape the tabs and the stage's totals go into the top bar | [W3.1](#w3-1) | New |
+| `frontend/src/pipeline/hooks.ts` | `useSendMove`: the drop's save path, moved out of the board so the sheet shares it: no save when the card stays put, and one move at a time per card (R6) | [W3.1](#w3-1) | Changed |
 | `frontend/src/pipeline/StageTabs.tsx` | P9: the row of stage tabs, a tab list with the chosen one in view | [W3.1](#w3-1) | New |
 | `frontend/src/pipeline/MoveSheet.tsx` | P10: the sheet with the six stages, "(now)", Move up and Move down | [W3.1](#w3-1) | New |
-| `frontend/src/pipeline/Column.tsx`, `DealCard.tsx` | A card's "Move to" button on a phone; the column without drag handles | [W3.1](#w3-1) | Changed |
-| `frontend/src/pipeline/pipeline-phone.css` | Tabs, one column, cards full width, two columns in landscape | [W3.1](#w3-1) | New |
-| `frontend/src/pipeline/board.test.ts`, `PipelinePage.test.tsx`, `StageTabs.test.tsx`, `MoveSheet.test.tsx` | TF42, TF43 | [W3.1](#w3-1) | Changed, two new |
+| `frontend/src/pipeline/Column.tsx`, `DealCard.tsx` | `ColumnFrame`, the column without drag, which both sizes use; on a phone the card's top lines link to the deal and its last line holds "Move to" | [W3.1](#w3-1) | Changed |
+| `frontend/src/shared/stages.ts`, `deals/DealsPage.tsx` | `stageFromParam` moves to `stages.ts`, shared by the deals filter and the pipeline's stage | [W3.1](#w3-1) | Changed |
+| `frontend/src/shared/Sheet.tsx` | The sheet's first focus skips a disabled button, such as the deal's own stage in Move to | [W3.1](#w3-1) | Changed |
+| `frontend/src/pipeline/pipeline-phone.css` | Tabs, one column, cards full width, the Move to sheet, and in landscape the tabs in the top bar and two columns of cards | [W3.1](#w3-1) | New |
+| `frontend/src/pipeline/board.test.tsx`, `PipelinePhone.test.tsx` | TF42, TF43 (the tabs and the sheet are tested through the page) | [W3.1](#w3-1) | Changed, one new |
 
 <a id="pt7"></a>**PT7 Dashboard**
 
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
 | `frontend/src/dashboard/DashboardPage.tsx` | H9's order on a phone, through the stylesheet's grid order, so the markup stays as it is | [W3.2](#w3-2) | Changed |
-| `frontend/src/dashboard/Charts.tsx` | Every third month's label on a phone; tooltips open on a tap | [W3.2](#w3-2) | Changed |
-| `frontend/src/dashboard/Funnel.tsx`, `Lists.tsx`, `Tiles.tsx` | The funnel's names above its bars, 56 px list rows and 44 px Mark done, half-width tiles | [W3.2](#w3-2) | Changed |
-| `frontend/src/dashboard/dashboard-phone.css` | One column in portrait, two in landscape | [W3.2](#w3-2) | New |
+| `frontend/src/dashboard/Charts.tsx` | Every third month's label on a phone, counting back from this month (`monthTicks`); charts 180 and 160 px high; tooltips open on a tap | [W3.2](#w3-2) | Changed |
+| `frontend/src/dashboard/dashboard-phone.css` | One column in portrait, two in landscape; half-width tiles; the funnel's and stage bars' names above their bars; 56 px list rows with the date and a 44 px Mark done on the right. The funnel, lists and tiles change through this stylesheet alone, so their components don't change | [W3.2](#w3-2) | New |
 | `frontend/src/dashboard/DashboardPage.test.tsx` | TF46 | [W3.2](#w3-2) | Changed |
 
 ### End-to-end tests
@@ -198,10 +201,10 @@ Each test fails before its work item and passes after it. The frontend tests swi
 | <a id="tf40"></a>TF40 | `shared/RecordHeader.test.tsx`, the record pages' tests | Back, More with Edit and Delete, the name, second line and status; a contact's Call and Email are `tel:` and `mailto:` links, each left out when empty; on a laptop the pages are as before | C4, C7, D9, O3, N2 | None |
 | <a id="tf41"></a>TF41 | `activities/LogActivityForm.test.tsx`, `Timeline.test.tsx` | On a phone, Log activity opens the form in a sheet with Call chosen and the description focused, saves with the keyboard alone, and closes; each entry's Edit and Delete are behind More | A3, A4, A7 | [R6](#r6) |
 | <a id="tf42"></a>TF42 | `pipeline/board.test.ts` | `moveToStage` puts the card at the top of the new stage; `moveWithin` moves it one visible place up or down, past hidden cards as P4's drop does, and gives nothing at the first or last place; both give the same `Move` a drop to that place gives | P4, P10 | [R3](#r3) |
-| <a id="tf43"></a>TF43 | `pipeline/PipelinePage.test.tsx`, `StageTabs.test.tsx`, `MoveSheet.test.tsx` | On a phone: one stage at a time, chosen from the tabs and kept in the address; the stage's totals; Move to lists the six stages with "(now)"; a move updates the totals at once, says "Moved … to …", stays on the stage, saves in order, and a failed save puts the card back with the message; Move up and Move down left out at the ends | P5, P6, P9 to P11 | [R3](#r3), [R11](#r11) |
+| <a id="tf43"></a>TF43 | `pipeline/PipelinePhone.test.tsx` | On a phone: one stage at a time, chosen from the tabs (or the arrow keys) and kept in the address; the stage's totals; cards open their deal and can't be dragged; Move to lists the six stages with "(now)"; a move updates the totals at once, says "Moved … to …", stays on the stage, saves in order, and a failed save puts the card back with the message; Move up and Move down left out at the ends; with a search on, the tabs count what's shown and Move up goes past hidden cards | P5, P6, P9 to P11 | [R3](#r3), [R11](#r11) |
 | <a id="tf44"></a>TF44 | `search/SearchBox.test.tsx` | On a phone the button opens search full screen with the box focused; results and keys as F3 to F7; choosing a result opens it and closes search; Cancel closes and clears | F8 | None |
 | <a id="tf45"></a>TF45 | `account/UserMenu.test.tsx`, `account/SignInPage.test.tsx` | On a phone the menu opens in a sheet with the name, email, theme choice and Sign out, works by keyboard as U12 says, and closes on a tap outside; the sign-in screen is unchanged in what it says | U12, U13 | [R7](#r7) |
-| <a id="tf46"></a>TF46 | `dashboard/DashboardPage.test.tsx` | On a phone every third month is labelled on the charts; Mark done is a 44 px button; everything on the laptop's dashboard is still there | H1 to H9 | [R13](#r13) |
+| <a id="tf46"></a>TF46 | `dashboard/DashboardPage.test.tsx` | On a phone every third month is labelled on the charts; everything on the laptop's dashboard is still there, Mark done included. Mark done's 44 px is measured by TE38 in a real browser | H1 to H9 | [R13](#r13) |
 
 ### End-to-end tests (Playwright with Chrome)
 
@@ -209,11 +212,11 @@ Each runs in the `phone`, `phone-landscape` and `phone-narrow` projects unless i
 
 | ID | File in `e2e/phone/` | Proves | Requirements | Risks |
 | --- | --- | --- | --- | --- |
-| <a id="te38"></a>TE38 | `layout.spec.ts` | Every page, every open sheet and form, and the sign-in screen: no sideways scroll on the page, and the phone not zoomed out to fit something too wide (measured against the phone's own width, since a phone's browser widens its layout to fit wide content), every visible button and link at least 44 by 44 px, fields at 16 px, in light and in Dark. PH1 checks the shell on the dashboard, the pipeline and the three record pages; the three lists join in PH2, since Chrome on a phone widens the layout to fit the laptop's table even inside a clipped panel | N1, N3, N7, SC2 | [R4](#r4), [R13](#r13) |
+| <a id="te38"></a>TE38 | `layout.spec.ts` | Every page, every open sheet and form, and the sign-in screen: no sideways scroll on the page, and the phone not zoomed out to fit something too wide (measured against the phone's own width, since a phone's browser widens its layout to fit wide content), every visible button and link at least 44 by 44 px, fields at 16 px, in light and in Dark. PH1 checks the shell on the dashboard, the pipeline and the three record pages; the three lists join in PH2, since Chrome on a phone widens the layout to fit the laptop's table even inside a clipped panel; from PH3 every page's content too. The dashboard pass also checks H9's order (one column in portrait, two in landscape), every third month's label, and a tap opening each chart's tooltip | N1, N3, N7, SC2 | [R4](#r4), [R13](#r13) |
 | <a id="te39"></a>TE39 | `layout.spec.ts` | The tab bar in portrait and the rail in landscape reach every section, with the current one marked; in Dark the page is `#000000` and panels `#0B1A1F`, and a first visit opens in it; a 1440 px window in the same test run shows the sidebar and the laptop's dark page `#04232E` | N4, M6, SC3, SC6 | [R1](#r1) |
 | <a id="te40"></a>TE40 | `tables.spec.ts` | Contacts on a phone: search, the status filter, Sort by in both orders, the page controls, More then Edit saves a change, More then Delete asks in a sheet and deletes; the same list for deals and organizations | T1 to T8, C7, D11, O5 | None |
 | <a id="te41"></a>TE41 | `journeys.spec.ts` | From the dashboard, search for a contact, open them, Log activity, type a call and set a follow-up date, save: done in under 30 seconds at human typing speed, and the entry shows on the dashboard (`phone` only). Chrome's phone emulation shows no date picker and takes no typed dates, so the date is set directly; picking it by hand is part of TM20 | A7, F8, SC5 | [R6](#r6) |
-| <a id="te42"></a>TE42 | `pipeline.spec.ts` | Choose Negotiation from the tabs, Move a deal to Won: the totals change at once and the message says so; Move a card up and down; reload and the stage, the move and the order are kept | P9 to P11 | [R3](#r3), [R10](#r10), [R11](#r11) |
+| <a id="te42"></a>TE42 | `pipeline.spec.ts` | Choose Negotiation from the tabs, Move a deal to Won: the totals change at once and the message says so; Move a card up and down; reload and the stage, the move and the order are kept; a card opens its deal and Back returns to the same stage | P9 to P11 | [R3](#r3), [R10](#r10), [R11](#r11) |
 | <a id="te43"></a>TE43 | `journeys.spec.ts` | Half fill a contact form in portrait, turn the phone, and what was typed is still there; a contacts list scrolled and sorted keeps its sort and page after turning (`phone` only, turning to landscape and back) | N5 | [R8](#r8) |
 | <a id="te44"></a>TE44 | `journeys.spec.ts` | The user menu's sheet: choose Light, close by tapping outside, reopen, sign out; the sign-in screen fits the phone and signing in returns to the page (`phone` only) | U13, M1, U4 | [R7](#r7) |
 

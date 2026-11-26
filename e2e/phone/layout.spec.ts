@@ -7,32 +7,69 @@ const PAGES = [
   { path: "/contacts", title: "Contacts", tab: "Contacts" },
   { path: "/organizations", title: "Organizations", tab: "Orgs" },
 ];
-/**
- * Every page, and whether its content fits a phone yet as well as its shell (N1). The
- * dashboard and the pipeline are laid out for a phone in PH3.
- */
-const ALL_PAGES: { path: string; title: string | RegExp; content: boolean }[] = [
-  { path: "/", title: "Dashboard", content: false },
-  { path: "/pipeline", title: "Pipeline", content: false },
-  { path: "/deals", title: "Deals", content: true },
-  { path: "/contacts", title: "Contacts", content: true },
-  { path: "/organizations", title: "Organizations", content: true },
-  { path: "/contacts/1", title: /\w/, content: true },
-  { path: "/deals/1", title: /\w/, content: true },
-  { path: "/organizations/1", title: /\w/, content: true },
+/** Every page: its shell and its content fit a phone (N1). */
+const ALL_PAGES: { path: string; title: string | RegExp }[] = [
+  { path: "/", title: "Dashboard" },
+  { path: "/pipeline", title: "Pipeline" },
+  { path: "/deals", title: "Deals" },
+  { path: "/contacts", title: "Contacts" },
+  { path: "/organizations", title: "Organizations" },
+  { path: "/contacts/1", title: /\w/ },
+  { path: "/deals/1", title: /\w/ },
+  { path: "/organizations/1", title: /\w/ },
 ];
 
 for (const theme of ["light", "dark"] as const) {
   test(`TE38 every page's shell fits the phone, with 44 px tap targets, in ${theme}`, async ({ page }) => {
     await page.addInitScript((saved) => localStorage.setItem("accountable.theme", saved), theme);
-    for (const { path, title, content } of ALL_PAGES) {
+    for (const { path, title } of ALL_PAGES) {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
-      await expectNoSideScroll(page, { content });
-      await expectTapTargets(page, content ? "body" : ".tab-bar, .topbar");
+      await expectNoSideScroll(page, { content: true });
+      await expectTapTargets(page);
     }
   });
 }
+
+test("TE38 the dashboard's charts label every third month and open their tooltips on a tap", async ({ page }) => {
+  await page.goto("/");
+  const revenue = page.getByRole("region", { name: "Revenue won" });
+  const chart = revenue.locator(".recharts-surface");
+  await expect(chart).toBeVisible();
+  // Recharts draws the axis text in a layer of its own, so the months are found by their names.
+  const months = async () =>
+    (await revenue.locator("svg text").allTextContents()).filter((t) => /^[A-Z][a-z]{2}$/.test(t));
+  await expect.poll(months, { message: "every third of 12 months" }).toHaveLength(4);
+  const box = (await chart.boundingBox())!;
+  expect(box.x + box.width, "the chart fits the screen").toBeLessThanOrEqual(page.viewportSize()!.width);
+  await page.touchscreen.tap(box.x + box.width * 0.75, box.y + box.height / 2);
+  await expect(revenue.locator(".chart-tooltip")).toBeVisible();
+  await expect(revenue.locator(".chart-tooltip")).toContainText("won");
+
+  const wonLost = page.getByRole("region", { name: "Deals won and lost" });
+  await wonLost.scrollIntoViewIfNeeded();
+  const bars = (await wonLost.locator(".recharts-surface").boundingBox())!;
+  await page.touchscreen.tap(bars.x + bars.width * 0.6, bars.y + bars.height / 2);
+  await expect(wonLost.locator(".chart-tooltip")).toContainText("lost");
+});
+
+test("TE38 the dashboard reads in H9's order: one column in portrait, two in landscape", async ({ page }) => {
+  await page.goto("/");
+  const order = ["Revenue won", "Follow-ups", "Recent activity", "Open pipeline by stage", "Sales funnel", "Deals won and lost"];
+  const tops: number[] = [];
+  const lefts = new Set<number>();
+  for (const name of order) {
+    const box = (await page.getByRole("region", { name }).boundingBox())!;
+    tops.push(box.y);
+    lefts.add(Math.round(box.x));
+  }
+  expect(tops, "each panel at or below the one before").toEqual([...tops].sort((a, b) => a - b));
+  expect(lefts.size, "columns").toBe(isLandscape(page) ? 2 : 1);
+  const tiles = page.getByRole("region", { name: "Headline figures" }).getByRole("link");
+  const first = (await tiles.nth(0).boundingBox())!;
+  const third = (await tiles.nth(2).boundingBox())!;
+  if (!isLandscape(page)) expect(third.y, "the tiles are two by two").toBeGreaterThan(first.y + first.height);
+});
 
 test("TE39 the tab bar, or the rail in landscape, reaches every section with the current one marked", async ({
   page,
