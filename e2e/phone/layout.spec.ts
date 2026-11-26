@@ -1,3 +1,4 @@
+import type { Locator } from "@playwright/test";
 import { test, expect, expectNoSideScroll, expectTapTargets, isLandscape } from "../fixtures";
 
 const PAGES = [
@@ -34,7 +35,7 @@ for (const theme of ["light", "dark"] as const) {
 test("TE38 the dashboard's charts label every third month and open their tooltips on a tap", async ({ page }) => {
   await page.goto("/");
   const revenue = page.getByRole("region", { name: "Revenue won" });
-  const chart = revenue.locator(".recharts-surface");
+  const chart = revenue.getByRole("img", { name: /^Revenue won per month/ });
   await expect(chart).toBeVisible();
   // Recharts draws the axis text in a layer of its own, so the months are found by their names.
   const months = async () =>
@@ -43,14 +44,14 @@ test("TE38 the dashboard's charts label every third month and open their tooltip
   const box = (await chart.boundingBox())!;
   expect(box.x + box.width, "the chart fits the screen").toBeLessThanOrEqual(page.viewportSize()!.width);
   await page.touchscreen.tap(box.x + box.width * 0.75, box.y + box.height / 2);
-  await expect(revenue.locator(".chart-tooltip")).toBeVisible();
-  await expect(revenue.locator(".chart-tooltip")).toContainText("won");
+  // The tooltip reads "<month> $<value> won".
+  await expect(revenue.getByText(/\$[\d,]+ won$/)).toBeVisible();
 
   const wonLost = page.getByRole("region", { name: "Deals won and lost" });
   await wonLost.scrollIntoViewIfNeeded();
-  const bars = (await wonLost.locator(".recharts-surface").boundingBox())!;
+  const bars = (await wonLost.getByRole("img", { name: /^Deals won and lost per month/ }).boundingBox())!;
   await page.touchscreen.tap(bars.x + bars.width * 0.6, bars.y + bars.height / 2);
-  await expect(wonLost.locator(".chart-tooltip")).toContainText("lost");
+  await expect(wonLost.getByText(/\d+ won, \d+ lost$/)).toBeVisible();
 });
 
 test("TE38 the dashboard reads in H9's order: one column in portrait, two in landscape", async ({ page }) => {
@@ -100,21 +101,24 @@ test("TE39 the tab bar, or the rail in landscape, reaches every section with the
   }
 });
 
-const background = (selector: string) =>
-  `getComputedStyle(document.querySelector(${JSON.stringify(selector)})).backgroundColor`;
+const background = (target: Locator) => target.evaluate((el) => getComputedStyle(el).backgroundColor);
 
 test("TE39 a first visit on a phone opens in AMOLED dark; a laptop-size window keeps the laptop's dark", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.locator(".panel").first()).toBeVisible();
+  const body = page.locator("body");
+  const panel = page.getByRole("region", { name: "Revenue won", exact: true });
+  const sections = page.getByRole("navigation", { name: "Sections" });
+  await expect(panel).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("dark");
-  expect(await page.evaluate(background("body"))).toBe("rgb(0, 0, 0)");
-  expect(await page.evaluate(background(".panel"))).toBe("rgb(11, 26, 31)");
+  expect(await background(body)).toBe("rgb(0, 0, 0)");
+  expect(await background(panel)).toBe("rgb(11, 26, 31)");
 
   await page.setViewportSize({ width: 1440, height: 900 });
-  await expect(page.locator(".sidebar")).toBeVisible();
-  await expect(page.locator(".tab-bar")).toHaveCount(0);
-  expect(await page.evaluate(background("body"))).toBe("rgb(4, 35, 46)");
-  expect(await page.evaluate(background(".panel"))).toBe("rgb(0, 0, 0)");
+  // The sidebar says "Organizations" in full; the tab bar says "Orgs".
+  await expect(sections.getByRole("link", { name: "Organizations" })).toBeVisible();
+  await expect(sections.getByRole("link", { name: "Orgs", exact: true })).toHaveCount(0);
+  expect(await background(body)).toBe("rgb(4, 35, 46)");
+  expect(await background(panel)).toBe("rgb(0, 0, 0)");
 });

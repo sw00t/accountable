@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, columnTexts } from "./fixtures";
 
 test("TE04 add, search, sort, edit and filter contacts; the page shows organization, deals and timeline", async ({ page }) => {
   await page.goto("/contacts");
@@ -45,11 +45,11 @@ test("TE04 add, search, sort, edit and filter contacts; the page shows organizat
   const filter = page.getByRole("group", { name: "Filter by status" });
   await expect(filter.getByRole("button", { name: /^All/ })).toContainText("41");
   const qualified = filter.getByRole("button", { name: /^Qualified/ });
-  const count = Number((await qualified.locator(".count").textContent()) ?? "0");
+  const count = Number(((await qualified.textContent()) ?? "").replace(/\D/g, ""));
   await qualified.click();
   await expect(qualified).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText(`Showing 1 to ${count} of ${count}`)).toBeVisible();
-  const statuses = await page.locator("tbody .status").allTextContents();
+  const statuses = await columnTexts(page, "Status");
   expect(new Set(statuses)).toEqual(new Set(["Qualified"]));
 
   // The contact's page.

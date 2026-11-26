@@ -180,3 +180,31 @@ export async function dateKeys(page: Page, before: Locator, field: Locator): Pro
 }
 
 export { expect };
+
+// --- Finding things by role, label or text (STANDARDS.md) ---
+
+/** The text of each body row's cell in the column whose header starts with `header`. */
+export async function columnTexts(page: Page, header: string) {
+  const headers = (await page.getByRole("columnheader").allTextContents()).map((text) => text.trim());
+  const index = headers.findIndex((text) => text.startsWith(header));
+  expect(index, `a column headed "${header}"`).toBeGreaterThanOrEqual(0);
+  const rows = await page.getByRole("rowgroup").nth(1).getByRole("row").all();
+  return Promise.all(rows.map(async (row) => ((await row.getByRole("cell").nth(index).textContent()) ?? "").trim()));
+}
+
+/** The names of a phone list's rows, read from each row's "More for <name>" button. */
+export async function phoneRowNames(list: Locator) {
+  const labels = await list.getByRole("button", { name: /^More for / }).evaluateAll((buttons) =>
+    buttons.map((button) => button.getAttribute("aria-label") ?? ""),
+  );
+  return labels.map((label) => label.replace(/^More for /, ""));
+}
+
+/** The deal names on pipeline cards: each card is named "<deal>, <value>". */
+export async function cardNames(cards: Locator) {
+  const labels = await cards.evaluateAll((elements) => elements.map((el) => el.getAttribute("aria-label") ?? ""));
+  return labels.map((label) => label.replace(/, \$[\d,]+$/, ""));
+}
+
+/** A card's name is "<deal>, <value>", so this matches any card and nothing else. */
+export const CARD_NAME = /, \$[\d,]+$/;

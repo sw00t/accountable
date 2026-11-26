@@ -1,4 +1,4 @@
-import { test, expect, expectNoSideScroll, signIn, signInScreen, turnPhone } from "../fixtures";
+import { test, expect, expectNoSideScroll, phoneRowNames, signIn, signInScreen, turnPhone } from "../fixtures";
 
 // The journeys run at every size: portrait, landscape and 360 px (W4.1). A first visit on a
 // phone is AMOLED dark, and TE38 covers light.
@@ -11,10 +11,10 @@ test("TE41 search for a contact, open them and log a call with a follow-up, in u
   await page.getByRole("button", { name: "Search" }).click();
   await expect(page.getByRole("combobox")).toBeFocused();
   // Search fills the screen, over the tab bar or rail too.
-  const covered = await page.locator(".tab-bar").evaluate((bar) => {
+  const covered = await page.getByRole("navigation", { name: "Sections" }).evaluate((bar) => {
     const box = bar.getBoundingClientRect();
     const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
-    return Boolean(top?.closest(".top-search"));
+    return Boolean(top?.closest("[role=search]"));
   });
   expect(covered, "search covers the tab bar").toBe(true);
   await page.goBack();
@@ -62,10 +62,11 @@ test("TE43 turning the phone keeps a half-filled form, and a list's sort and pag
   await page.getByRole("button", { name: "Name, Z to A" }).click();
   await page.getByRole("button", { name: "Next" }).click();
   await expect(page.getByText("26 to 40 of 40")).toBeVisible();
-  const names = await page.locator(".phone-row-name").allTextContents();
+  const contacts = page.getByRole("list", { name: "Contacts" });
+  const names = await phoneRowNames(contacts);
   await turnPhone(page);
   await expect(page.getByText("26 to 40 of 40")).toBeVisible();
-  expect(await page.locator(".phone-row-name").allTextContents()).toEqual(names);
+  expect(await phoneRowNames(contacts)).toEqual(names);
   await expectNoSideScroll(page, { content: true });
 });
 
@@ -80,7 +81,8 @@ test("TE44 the user menu's sheet: choose Light, close it with a tap outside, the
   await expect(page.locator("html")).not.toHaveAttribute("data-theme");
   await expect(sheet).toBeVisible();
 
-  await page.locator(".sheet-scrim").click({ position: { x: 20, y: 20 } });
+  // A tap on the page above the sheet, which the sheet's scrim covers.
+  await page.mouse.click(20, 20);
   await expect(sheet).toBeHidden();
 
   await page.getByRole("button", { name: "Account menu for Test User" }).click();

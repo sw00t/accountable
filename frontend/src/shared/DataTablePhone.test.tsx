@@ -51,6 +51,7 @@ beforeEach(() => setPhone(true));
 test("rows are a list with the name, second line and end; tapping one opens it", async () => {
   const { onOpen } = setup(rows(3));
   expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  expect(screen.getByRole("list", { name: "Organizations" })).toBeInTheDocument();
   const first = screen.getAllByRole("listitem")[0];
   expect(first).toHaveTextContent("Org 01 York$0");
   await userEvent.click(within(first).getByRole("button", { name: "Org 01 York" }));

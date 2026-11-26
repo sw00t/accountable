@@ -12,6 +12,8 @@ import { TopBarSlot } from "./topBarSlot";
 export type PhoneRow = { name: string; badge?: ReactNode; detail?: ReactNode; end?: ReactNode };
 
 type ListProps<T> = {
+  /** What the list holds, such as "Contacts", for screen readers. */
+  label: string;
   rows: Row<T>[];
   phoneRow: (row: T) => PhoneRow;
   onOpen: (row: T) => void;
@@ -19,9 +21,9 @@ type ListProps<T> = {
   onDelete: (row: T) => void;
 };
 
-export function PhoneList<T>({ rows, phoneRow, onOpen, onEdit, onDelete }: ListProps<T>) {
+export function PhoneList<T>({ label, rows, phoneRow, onOpen, onEdit, onDelete }: ListProps<T>) {
   return (
-    <ul className="phone-list">
+    <ul className="phone-list" aria-label={label}>
       {rows.map((row) => {
         const { name, badge, detail, end } = phoneRow(row.original);
         return (

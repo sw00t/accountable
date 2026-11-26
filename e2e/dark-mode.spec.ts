@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import { test, expect, accountCircle, accountMenu, chooseTheme, signIn } from "./fixtures";
+import { test, expect, accountCircle, accountMenu, chooseTheme, signIn, CARD_NAME } from "./fixtures";
 
 // Every browser context starts with no theme saved, so each test opens in dark mode (M1).
 const LIGHT_PAGE = "rgb(240, 244, 245)";
@@ -9,6 +9,13 @@ const SECTIONS = ["Dashboard", "Pipeline", "Deals", "Contacts", "Organizations"]
 const THEME_KEY = "accountable.theme";
 
 const html = (page: Page) => page.locator("html");
+/** A panel or card on each section's page: a chart's panel, a deal card, or a table's panel. */
+const surface = (page: Page, section: string) =>
+  section === "Dashboard"
+    ? page.getByRole("region", { name: "Revenue won", exact: true })
+    : section === "Pipeline"
+      ? page.getByRole("button", { name: CARD_NAME }).first()
+      : page.getByRole("table").locator("..");
 const background = (page: Page, selector: string) =>
   page.locator(selector).first().evaluate((el) => getComputedStyle(el).backgroundColor);
 /** Opens the user menu and says which theme it shows as chosen. */
@@ -36,7 +43,7 @@ test("TE24 Dark covers every section, and Light and Dark are each kept after a r
     await sections.getByRole("link", { name }).click();
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
     expect(await background(page, "body")).toBe(DARK_PAGE);
-    expect(await background(page, "main :is(.panel, .card)")).toBe(BLACK);
+    expect(await backgroundOf(surface(page, name))).toBe(BLACK);
   }
 
   await page.reload();
@@ -186,13 +193,15 @@ test("TE28 panels, cards, dialogs, toasts and charts follow the theme without a 
   expect(await stylesOf(axisLabels, "fill")).toEqual([darkMuted]);
 
   await page.getByRole("button", { name: "Mark done" }).first().click();
-  await expect(page.locator(".toast")).toBeVisible();
-  expect(await background(page, ".toast")).toBe(MIDNIGHT);
+  // The toast is the box around its message.
+  const toast = page.getByRole("status").getByText("Follow-up marked done.").locator("..");
+  await expect(toast).toBeVisible();
+  expect(await backgroundOf(toast)).toBe(MIDNIGHT);
 
   const sections = page.getByRole("navigation", { name: "Sections" });
   await sections.getByRole("link", { name: "Pipeline" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Pipeline" })).toBeVisible();
-  expect(await background(page, ".card")).toBe(BLACK);
+  expect(await backgroundOf(page.getByRole("button", { name: CARD_NAME }).first())).toBe(BLACK);
   const addDeal = page.getByRole("button", { name: "Add deal", exact: true });
   expect(await addDeal.evaluate((el) => getComputedStyle(el).color)).toBe(MIDNIGHT);
   await addDeal.click();

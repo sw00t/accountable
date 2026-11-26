@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, columnTexts } from "./fixtures";
 
 test("TE06 add, search, sort, edit and filter deals; late badge; the page shows details and timeline", async ({ page }) => {
   await page.goto("/deals");
@@ -7,7 +7,7 @@ test("TE06 add, search, sort, edit and filter deals; late badge; the page shows 
   await panel.getByLabel("Name").fill("Wilson data platform");
   await panel.getByLabel("Organization").selectOption({ label: "Wilson Software" });
   // D2: the organization's contacts come first.
-  await expect(panel.locator("#deal-contact optgroup").first()).toHaveAttribute("label", "At Wilson Software");
+  await expect(panel.getByLabel("Main contact").locator("optgroup").first()).toHaveAttribute("label", "At Wilson Software");
   await panel.getByLabel("Main contact").selectOption({ label: "Karen Willis" });
   await panel.getByLabel("Stage").selectOption("proposal");
   await panel.getByLabel("Value (US dollars)").fill("48,200");
@@ -37,7 +37,7 @@ test("TE06 add, search, sort, edit and filter deals; late badge; the page shows 
   // Every deal again, then the two highest values first, once the sorted list has loaded.
   await expect(page.getByText("Showing 1 to 25 of")).toBeVisible();
   const valueIn = async (row: number) =>
-    Number(((await page.getByRole("row").nth(row).locator("td").nth(4).textContent()) ?? "").replace(/\D/g, ""));
+    Number(((await page.getByRole("row").nth(row).getByRole("cell").nth(4).textContent()) ?? "").replace(/\D/g, ""));
   await expect.poll(async () => (await valueIn(1)) >= (await valueIn(2))).toBe(true);
 
   // Late deals stand out.
@@ -58,7 +58,7 @@ test("TE06 add, search, sort, edit and filter deals; late badge; the page shows 
   await page.getByLabel("Filter by stage").selectOption("won");
   await expect(page).toHaveURL(/stage=won/);
   await expect(page.getByText("11 deals in Won")).toBeVisible();
-  const stages = await page.locator("tbody .stage-pill").allTextContents();
+  const stages = await columnTexts(page, "Stage");
   expect(new Set(stages)).toEqual(new Set(["Won"]));
 
   // The deal's page.
@@ -120,9 +120,9 @@ test("TE07 changing the stage filter shows loading, never the previous stage's r
   });
   await page.getByLabel("Filter by stage").selectOption("won");
   await expect(page.getByText("Loading…")).toBeVisible();
-  await expect(page.locator("tbody tr")).toHaveCount(0);
+  await expect(page.getByRole("rowgroup").nth(1).getByRole("row")).toHaveCount(0);
   await expect(page.getByText(/deals in Won/)).toHaveCount(0);
   release();
   await expect(page.getByText("11 deals in Won")).toBeVisible();
-  expect(new Set(await page.locator("tbody .stage-pill").allTextContents())).toEqual(new Set(["Won"]));
+  expect(new Set(await columnTexts(page, "Stage"))).toEqual(new Set(["Won"]));
 });

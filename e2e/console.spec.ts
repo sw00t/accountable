@@ -34,7 +34,7 @@ for (const mode of ["light", "dark"]) {
       await page.getByRole("button", { name: add }).first().click();
       await expect(page.getByRole("dialog", { name: add })).toBeVisible();
       await page.keyboard.press("Escape");
-      const row = page.locator("tbody tr").first();
+      const row = page.getByRole("rowgroup").nth(1).getByRole("row").first();
       await row.hover();
       await row.getByRole("button", { name: /^Edit / }).click();
       await expect(page.getByRole("dialog", { name: edit })).toBeVisible();
@@ -43,7 +43,7 @@ for (const mode of ["light", "dark"]) {
       await expect(page.getByRole("alertdialog")).toBeVisible();
       await page.getByRole("button", { name: "Cancel" }).click();
       // Sort every column and page through.
-      for (const header of await page.locator("thead th .sort").all()) await header.click();
+      for (const header of await page.getByRole("columnheader").getByRole("button").all()) await header.click();
       if ((await page.getByRole("button", { name: "Next page" }).count()) > 0) {
         await page.getByRole("button", { name: "Next page" }).click();
       }

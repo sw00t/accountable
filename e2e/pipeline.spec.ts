@@ -1,9 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
-import { test, expect } from "./fixtures";
+import { test, expect, CARD_NAME, cardNames } from "./fixtures";
 
-const column = (page: Page, name: string) => page.locator("section.col", { has: page.getByRole("heading", { name, exact: true }) });
-const titles = (page: Page, name: string) => column(page, name).locator(".card .t").allTextContents();
-const card = (page: Page, name: string) => page.locator(".board .card", { hasText: name });
+// Each stage is a region named after it; each card is a button named "<deal>, <value>".
+const column = (page: Page, name: string) => page.getByRole("region", { name, exact: true });
+const titles = (page: Page, name: string) => cardNames(column(page, name).getByRole("button", { name: CARD_NAME }));
+const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const cardIn = (scope: Page | Locator, name: string) =>
+  scope.getByRole("button", { name: new RegExp(`^${escape(name)}, \\$[\\d,]+$`) });
+const card = (page: Page, name: string) => cardIn(page, name);
 
 /** A mouse drag in small steps, so dnd-kit sees it as a person would (R1). */
 async function drag(page: Page, from: Locator, to: Locator, where: "above" | "below") {
@@ -44,13 +48,13 @@ const money = (text: string | null) => Number((text ?? "").replace(/[^0-9]/g, ""
 
 test("TE10 six columns; dragging to another column changes stage and probability, shown in the deals table", async ({ page }) => {
   await page.goto("/pipeline");
-  await expect(page.locator("section.col h2")).toHaveText(["New", "Qualified", "Proposal", "Negotiation", "Won", "Lost"]);
+  await expect(page.getByRole("heading", { level: 2 })).toHaveText(["New", "Qualified", "Proposal", "Negotiation", "Won", "Lost"]);
   const logan = card(page, "Logan training package");
   await expect(logan.getByRole("img", { name: "10% probability" })).toBeVisible();
 
   const saved = moveSaved(page);
   await drag(page, logan, card(page, "Tate hardware refresh"), "above");
-  await expect(column(page, "Qualified").locator(".card", { hasText: "Logan training package" })).toBeVisible();
+  await expect(cardIn(column(page, "Qualified"), "Logan training package")).toBeVisible();
   await expect(card(page, "Logan training package").getByRole("img", { name: "25% probability" })).toBeVisible();
   await saved;
 
@@ -100,7 +104,7 @@ test("TE12 column and board totals change the moment a card drops", async ({ pag
   const before = money(await boardValue.textContent());
   const negotiationBefore = money(await column(page, "Negotiation").getByTestId("column-value").textContent());
   const wonBefore = money(await column(page, "Won").getByTestId("column-value").textContent());
-  const value = money(await card(page, "Heath training package").locator(".v").textContent());
+  const value = money(await card(page, "Heath training package").getAttribute("aria-label"));
 
   // Hold the server's reply, to show the totals change before it answers.
   let release: () => void = () => {};
@@ -147,10 +151,10 @@ test("TE14 moving a card with the keyboard", async ({ page }) => {
     await page.keyboard.press(key);
     await page.waitForTimeout(150);
   }
-  await expect(column(page, "Qualified").locator(".card", { hasText: "Shaw second site expansion" })).toBeVisible();
+  await expect(cardIn(column(page, "Qualified"), "Shaw second site expansion")).toBeVisible();
   await saved;
   await page.reload();
-  await expect(column(page, "Qualified").locator(".card", { hasText: "Shaw second site expansion" })).toBeVisible();
+  await expect(cardIn(column(page, "Qualified"), "Shaw second site expansion")).toBeVisible();
   // Enter opens the deal.
   await card(page, "Shaw second site expansion").focus();
   await page.keyboard.press("Enter");
@@ -163,7 +167,7 @@ test("TE15 dropping into Won closes the deal: close date today, contact becomes 
   await expect(tate).toContainText("Late");
   const saved = moveSaved(page);
   await drag(page, tate, card(page, "Wilson annual licence"), "above");
-  const won = column(page, "Won").locator(".card", { hasText: "Tate hardware refresh" });
+  const won = cardIn(column(page, "Won"), "Tate hardware refresh");
   await expect(won).toContainText("Closed 16 Nov 2026");
   await expect(won).not.toContainText("Late");
   await expect(won.getByRole("img")).toHaveCount(0);

@@ -1,8 +1,12 @@
 import type { Page } from "@playwright/test";
-import { test, expect, expectNoSideScroll, expectTapTargets } from "../fixtures";
+import { test, expect, expectNoSideScroll, expectTapTargets, cardNames } from "../fixtures";
 
 const tab = (page: Page, name: string) => page.getByRole("tab", { name: new RegExp(`^${name}`) });
-const titles = (page: Page) => page.getByRole("tabpanel").locator(".card .t").allTextContents();
+// Each card's link is named "<deal>, <value>".
+const titles = (page: Page) => cardNames(page.getByRole("tabpanel").getByRole("link"));
+/** A tab is named "<stage>, <count> deals". */
+const tabCount = async (page: Page, name: string) =>
+  Number(((await tab(page, name).getAttribute("aria-label")) ?? "").replace(/\D/g, ""));
 const moveTo = (page: Page, name: string) => page.getByRole("button", { name: `Move to: ${name}` });
 const sheet = (page: Page, name: string) => page.getByRole("dialog", { name: `Move "${name}" to` });
 const money = (text: string | null) => Number((text ?? "").replace(/[^0-9]/g, ""));
@@ -28,7 +32,7 @@ test("TE42 one stage at a time: Move to Won, Move up and Move down, all kept aft
   await tab(page, "Negotiation").click();
   await expect(page).toHaveURL(/\?stage=negotiation$/);
   await expect(tab(page, "Negotiation")).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tabpanel").locator(".card").first()).toBeVisible();
+  await expect(page.getByRole("tabpanel").getByRole("link").first()).toBeVisible();
   await expectNoSideScroll(page, { content: true });
   await expectTapTargets(page);
 
@@ -38,7 +42,7 @@ test("TE42 one stage at a time: Move to Won, Move up and Move down, all kept aft
   const [first] = before;
   const stageValue = money(await page.getByTestId("column-value").textContent());
   const openValue = money(await page.getByTestId("board-value").textContent());
-  const wonCount = Number(await tab(page, "Won").locator(".count").textContent());
+  const wonCount = await tabCount(page, "Won");
   await moveTo(page, first).click();
   await expect(sheet(page, first)).toBeVisible();
   await expectTapTargets(page, "[role=dialog]");
@@ -49,7 +53,7 @@ test("TE42 one stage at a time: Move to Won, Move up and Move down, all kept aft
   await expect.poll(() => titles(page)).toEqual(before.slice(1));
   expect(money(await page.getByTestId("column-value").textContent())).toBeLessThan(stageValue);
   expect(money(await page.getByTestId("board-value").textContent())).toBeLessThan(openValue);
-  await expect(tab(page, "Won").locator(".count")).toHaveText(String(wonCount + 1));
+  await expect(tab(page, "Won")).toHaveAccessibleName(`Won, ${wonCount + 1} deals`);
   await expect(tab(page, "Negotiation")).toHaveAttribute("aria-selected", "true");
   await saved;
 
@@ -79,7 +83,7 @@ test("TE42 one stage at a time: Move to Won, Move up and Move down, all kept aft
   await expect(tab(page, "Negotiation")).toHaveAttribute("aria-selected", "true");
   await expect.poll(() => titles(page)).toEqual(order);
   await tab(page, "Won").click();
-  await expect(page.getByRole("tabpanel").locator(".card .t").first()).toHaveText(first);
+  await expect(page.getByRole("tabpanel").getByRole("link").first()).toHaveAccessibleName(new RegExp(`^${first}, `));
 });
 
 test("TE42 a card opens its deal, and Back returns to the same stage", async ({ page }) => {

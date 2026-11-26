@@ -710,6 +710,15 @@ The reviewer subagent read `main...phone-view` against `docs/REVIEW.md`: two Imp
 - **Merged and live:** `phone-view` passed CI on the branch, was merged into `main` (`88fb315`) and pushed; CI passed on `main`. Render was still deploying from the `multi-user` branch it was first set up on, so `main`'s pushes hadn't reached it (the harness round after multi-user hadn't either). The product owner switched the service's branch to `main` in Render's dashboard; from now on each push to `main` deploys once CI passes. The live app at https://accountable-q9l3.onrender.com serves the phone build ("Move to", the stage tabs and "Search everything" are in its code) and `/api/health` answers 200.
 - **TM20, signed off:** the product owner used the live app on a real phone in portrait and landscape, light and Dark: every section, a search, a record, Log activity with a follow-up picked with the phone's own date picker, a form, a delete, the pipeline's Move to, the menu and sign out. Signed off how it works and how it looks (SC7). Every success criterion in `intent.md` is now met.
 
+## End-to-end selectors (25 Nov)
+
+`docs/STANDARDS.md` now says end-to-end tests find elements by role, label or text rather than class names, so the tests that didn't were brought in line on the `e2e-selectors` branch. No test was dropped or loosened.
+
+- **Helpers in `e2e/fixtures.ts`:** `columnTexts` reads a table column's cells by its header; `phoneRowNames` reads a phone list's rows from their "More for <name>" buttons; `cardNames` and `CARD_NAME` read pipeline cards, which are named "<deal>, <value>".
+- **One change to the app:** a phone list is now named after its records (`aria-label="Contacts"`), so tests and screen readers can tell it apart; TF38 checks it.
+- **What replaced what:** pipeline columns are their regions and cards their buttons or links; table cells come by column header; the dashboard's charts are found by their image names, with the revenue line as the chart's unfilled path and the bars as the other chart's paths; an overdue chip by its label; a toast by its message; the tab bar and sidebar by the "Sections" navigation and its link names ("Orgs" or "Organizations"); a tab's count from its name; a timeline entry's text from its Edit button's name; the sheet's scrim by tapping above the sheet. Plain tags with no class stay where nothing else can name them: `html` and `body` for the theme and page color, and a chart's `line`, `text` and `path`.
+- **Tests:** `npm run check` passes in full: backend 512, frontend 700 unit tests in 49 files, end-to-end 98.
+
 ## Ideas for later
 
 - **Laptop tidying found by ui-check (TM22):** the inline Log activity field is too narrow for its placeholder; a long email on a contact's details breaks mid-word; contact table rows wrap unevenly at 1440 wide.

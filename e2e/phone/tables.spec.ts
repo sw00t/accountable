@@ -1,9 +1,10 @@
 import type { Page } from "@playwright/test";
-import { test, expect, expectNoSideScroll, expectTapTargets } from "../fixtures";
+import { test, expect, expectNoSideScroll, expectTapTargets, phoneRowNames } from "../fixtures";
 
-const list = (page: Page) => page.locator(".phone-list");
+// The phone list is named after its records; a row's text ends with its status, stage or amount.
+const list = (page: Page) => page.getByRole("list", { name: /^(Contacts|Deals|Organizations)$/ });
 const rows = (page: Page) => list(page).getByRole("listitem");
-const names = (page: Page) => list(page).locator(".phone-row-name").allTextContents();
+const names = (page: Page) => phoneRowNames(list(page));
 
 /** An open sheet or form fits the phone and every control in it is big enough to tap (TE38). */
 async function expectFits(page: Page) {
@@ -27,8 +28,8 @@ test("TE40 contacts on a phone: search, filter, sort, paging, edit and delete", 
   // The status filter (C3): every row is a lead.
   await page.getByRole("group", { name: "Filter by status" }).getByRole("button", { name: /^Lead/ }).click();
   await expect
-    .poll(async () => new Set(await list(page).locator(".phone-row-end").allTextContents()))
-    .toEqual(new Set(["Lead"]));
+    .poll(async () => new Set((await rows(page).allTextContents()).map((text) => text.endsWith("Lead"))))
+    .toEqual(new Set([true]));
 
   // Sort by, in both orders (T8).
   await page.getByRole("button", { name: "Sort by" }).click();
@@ -66,14 +67,14 @@ test("TE40 contacts on a phone: search, filter, sort, paging, edit and delete", 
 test("TE40 the deals and organizations lists show their own second line and amount", async ({ page }) => {
   await page.goto("/deals");
   const deal = rows(page).first();
-  await expect(deal.locator(".phone-row-detail")).toContainText(/(New|Qualified|Proposal|Negotiation|Won|Lost)$/);
-  await expect(deal.locator(".phone-row-end")).toContainText(/^\$[\d,]+$/);
+  // The second line ends with the stage, then the value.
+  await expect(deal).toHaveText(/(New|Qualified|Proposal|Negotiation|Won|Lost)\$[\d,]+$/);
   await expectNoSideScroll(page, { content: true });
 
   await page.goto("/organizations");
   const org = rows(page).first();
-  await expect(org.locator(".phone-row-end")).toContainText(/^\$[\d,]+$/);
-  await org.locator(".phone-row-open").click();
+  await expect(org).toHaveText(/\$[\d,]+$/);
+  await org.getByRole("button").first().click();
   await expect(page.getByRole("button", { name: "Back" })).toBeVisible();
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Organizations" })).toBeVisible();

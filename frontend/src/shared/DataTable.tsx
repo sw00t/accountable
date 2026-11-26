@@ -202,6 +202,7 @@ export function DataTable<T>({
         empty
       ) : phone ? (
         <PhoneList
+          label={noun[1].charAt(0).toUpperCase() + noun[1].slice(1)}
           rows={rows}
           phoneRow={phoneRow!}
           onOpen={onOpen}

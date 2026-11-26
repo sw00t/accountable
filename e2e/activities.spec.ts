@@ -82,7 +82,9 @@ test("TE17 changing an activity's type in the edit panel shows on the timeline (
   await page.getByRole("searchbox").fill("Karen Willis");
   await page.getByRole("link", { name: "Karen Willis" }).click();
   const first = page.getByRole("region", { name: "Timeline" }).getByRole("listitem").first();
-  const description = (await first.locator(".entry-main > div").first().textContent())!;
+  // Its Edit button is named "Edit <type>: <description>".
+  const editName = (await first.getByRole("button", { name: /^Edit / }).getAttribute("aria-label"))!;
+  const description = editName.replace(/^Edit \w+: /, "");
   await first.hover();
   await first.getByRole("button", { name: /^Edit / }).click();
   const panel = page.getByRole("dialog", { name: "Edit activity" });

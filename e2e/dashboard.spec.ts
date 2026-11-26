@@ -27,7 +27,7 @@ test("TE18 every figure, chart and list matches the data; each headline links to
     "aria-label",
     new RegExp(`Nov 2026 ${data.months[11].won_count} won, ${data.months[11].lost_count} lost`),
   );
-  await expect(page.locator(".recharts-surface").first()).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Revenue won per month/ })).toBeVisible();
 
   // Funnel and pipeline by stage.
   const funnel = page.getByRole("list", { name: "Sales funnel" }).getByRole("listitem");
@@ -42,7 +42,7 @@ test("TE18 every figure, chart and list matches the data; each headline links to
   const follow = page.getByRole("region", { name: "Follow-ups" }).getByRole("listitem");
   await expect(follow).toHaveCount(data.follow_ups.length);
   await expect(follow.first()).toContainText(data.follow_ups[0].description);
-  await expect(follow.first().locator(".chip.overdue")).toBeVisible();
+  await expect(follow.first().getByLabel(/, overdue$/)).toBeVisible();
   await expect(page.getByRole("region", { name: "Recent activity" }).getByRole("listitem")).toHaveCount(10);
 
   // Each headline is one click from the answer.
@@ -101,10 +101,11 @@ test("TE18 the charts use the brand colors from the tokens (RV9)", async ({ page
   await page.goto("/");
   const SEA_GREEN = "rgb(6, 214, 160)";
   const CORAL = "rgb(247, 140, 107)";
-  const line = page.locator(".recharts-area-curve").first();
+  // The revenue line is the chart's one unfilled path; the bars are the other chart's paths.
+  const line = page.getByRole("img", { name: /^Revenue won per month/ }).locator('path[fill="none"]').first();
   await expect(line).toBeVisible();
   expect(await line.evaluate((el) => getComputedStyle(el).stroke)).toBe(SEA_GREEN);
-  const bars = page.locator(".recharts-bar path");
+  const bars = page.getByRole("img", { name: /^Deals won and lost per month/ }).locator("path");
   await expect(bars.first()).toBeAttached();
   await expect
     .poll(() => bars.evaluateAll((els) => [...new Set(els.map((el) => getComputedStyle(el).fill))].sort()))

@@ -4,7 +4,7 @@ import { test, expect } from "./fixtures";
 const searchBox = (page: Page) => page.getByRole("search").getByRole("combobox", { name: "Search" });
 const results = (page: Page) => page.getByRole("listbox", { name: "Search results" });
 const group = (page: Page, name: string) => results(page).getByRole("group", { name });
-const selected = (page: Page) => results(page).locator('[role="option"][aria-selected="true"]');
+const selected = (page: Page) => results(page).getByRole("option", { selected: true });
 
 test("TE35 part of a name in another case finds an organization, a contact and a deal from the top bar", async ({
   page,
