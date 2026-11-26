@@ -62,6 +62,30 @@ test("a status filter asks for that status only and says when there are none", a
   expect(await table()).toBeInTheDocument();
 });
 
+test("changing the status filter shows loading, never the previous status's rows", async () => {
+  mockApi({
+    ...routes,
+    "GET /contacts?status=qualified": { ...list([cy]), status_counts: counts },
+  });
+  const answer = fetch;
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+    if (url.endsWith("?status=qualified")) await held;
+    return answer(url, init);
+  });
+  renderApp("/contacts");
+  await table();
+
+  await userEvent.click(screen.getByRole("button", { name: /^Qualified/ }));
+  expect(await screen.findByText("Loading…")).toBeInTheDocument();
+  expect(screen.queryByText("Ann Bolt")).not.toBeInTheDocument();
+
+  release();
+  expect(within(await table()).getByText("Cy Dale")).toBeInTheDocument();
+  expect(screen.queryByText("Ann Bolt")).not.toBeInTheDocument();
+});
+
 test("clicking a row opens the contact", async () => {
   mockApi({
     ...routes,

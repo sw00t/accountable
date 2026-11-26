@@ -1,4 +1,4 @@
-The MVP and dark mode are built and their automated tests pass. Accountable runs on a Mac. Two checks remain before it's called done: TM04 (how fast it feels at full size) and TM05 (code review), listed at the end.
+The MVP, dark mode, and sign-in with search and a user menu (multi-user) are built and merged, and Accountable is live on Render. Two of the MVP's by-hand checks are still open: TM04 (how fast it feels at full size) and TM05 (code review), listed under PH8.
 
 ## How to start Accountable
 
@@ -444,6 +444,27 @@ Watch list (seen once; a second time calls for a fix in the harness):
 - A test environment hiding a browser API: Node 26's own `localStorage` hid jsdom's until the unit tests ran with `--no-experimental-webstorage` (dark mode PH4).
 - A fix tested only where the review found it, not across the same kind of code (MVP review, "Tests widened").
 
+### After multi-user (25 Nov)
+
+Followed `docs/IMPROVE.md` on the `harness-after-multi-user` branch, since multi-user was merged before this round. Looked at the two reviews of multi-user, what the product owner corrected, and what the checks caught, against the MVP and dark mode reviews and the watch list above.
+
+- **Repeated: a fix made only where the review found it.** On the MVP's watch list, and seen again: RV20 stopped Deals showing the previous stage's rows while a new filter loads, but Contacts kept `placeholderData` and showed the previous status's rows under the new filter. Found by searching for the same pattern in this round; now fixed the same way, with a test in `ContactsPage.test.tsx` that failed before the fix. `AGENTS.md` now says to search for the same kind of mistake when fixing a finding, and to record the search here.
+- **Repeated: behaviour between states left untested.** MVP: RV7, RV20, RV22 and RV24. Multi-user: a failed key fetch signing everyone out, a late 401 ending a newer session, and a failed search after a successful one keeping its results. Each test started from a fresh state. `AGENTS.md` (Checks and testing) now lists the transitions to test, and `docs/REVIEW.md`'s Bugs pass asks the reviewer to check them and any slow or failing service.
+- **Repeated: timing tests failing under load.** TB41 failed while other agents ran tests (PH1), three frontend tests hit IC14's one second under load (TM18), and TB41 failed again in the stop hook. TB41 now times a slow request again before failing. `AGENTS.md` now says to allow for a busy machine rather than raise a limit.
+- **Process: the round ran after the merge.** `AGENTS.md` now says not to merge until this section records the change's round, and `docs/IMPROVE.md` says how to find a merged change's commits.
+- **Searched, nothing else found:** module-level state in the frontend (`api.ts`'s session, now tied to each request; `Toast.tsx`'s id counter; `mode.ts`'s theme); other `placeholderData` lists (Deals already shows loading); other `except` clauses in the backend (each catches one known cause); tests waiting on threads (only TB47's, which now has time limits).
+- **Tests:** `npm run check` passes in full: backend 512, frontend 544 unit tests in 39 files, end-to-end 56.
+- **Still suggested for `docs/STANDARDS.md`,** from the last round and not yet taken up: find elements in end-to-end tests by role, label or text, not a library's class names. `e2e/dashboard.spec.ts` still uses Recharts' classes.
+
+Watch list (seen once; a second time calls for a fix in the harness):
+
+- A test environment hiding a browser API (dark mode PH4).
+- A local stand-in differing from the service it stands in for: local sign-out ignored Supabase's `scope` (independent review).
+- A copy of state that can drift from its source: the session gate's copy of the person (independent review).
+- Error handling that assumes one cause: any `IntegrityError` adding a person was treated as a race and retried without limit (independent review).
+- A test that hangs rather than fails: TB47's lock test (independent review).
+- A comment stating behaviour no test checked: TE36's note that signing out left the shared session valid (independent review).
+
 ## Subagents (23 Nov)
 
 - `.claude/agents/reviewer.md`: reviews the changes on a branch (or a named commit or range) against `docs/REVIEW.md` and reports Important findings, at most five nits, and open questions. Tools: Read, Grep, Glob and Bash. Model: Sonnet. Its PreToolUse hook, `.claude/hooks/reviewer-read-only.mjs`, splits each Bash command at unquoted `;`, `&&`, `||`, `|` and `&`, and blocks it unless every part is a read-only command (git diff, log, show, grep, status, blame and similar; grep, cat, head, ls, find and similar). It also blocks writing to a file, command substitution, `find -delete` or `-exec`, `git branch` with anything but listing options, and environment-variable prefixes. Tried on 15 commands that read (all allowed) and 15 that write or run things (all blocked).
@@ -516,7 +537,7 @@ Checked on Supabase: after the user's `npm run build` and `npm start` applied mi
 
 For PH4, the Host header Render's health check sends was checked: it's the `onrender.com` host, which G6 allows (see PH4).
 
-### PH3 User menu: built
+### PH3 User menu: done
 
 - **Theme (PT7):** dark is now the theme until someone picks another, and System follows the device's setting as it changes. `index.html`'s script reads `light`, `dark` or `system` from `accountable.theme` and treats anything else as dark, so a light or dark choice saved before this change is kept. `mode.ts` applies and saves the theme, and its `followDeviceTheme()` is called once from `main.tsx`.
 - **User menu (PT7):** a Sea Green circle with the person's initials at the right of the top bar. The menu shows their name and email, the Light, Dark and System choice, and Sign out. Signing out clears the cached data, shows the sign-in screen and keeps the theme. It works by keyboard: Enter or Space opens it, the arrows move through it and into the theme choices, and Escape or Tab closes it with focus back on the circle. Choosing a theme keeps the menu open.
@@ -590,6 +611,8 @@ All six findings were fixed:
 - **Nits:** a failed insert of a person's row is retried only when the other request's row is there, and is raised otherwise; the lock test holds a fetch up on another thread with bounded waits, so a regression fails rather than hangs.
 - **Tests:** TF22, TF25, TF27, TB48 and TB49 gain regression tests, and TB47's lock test is rewritten. Run against the old code, each new test failed (the insert test with a recursion error), except the rewritten lock test, which guards against a regression the code doesn't have. `plan.md` is updated: R12, R15, TB47 to TB49, TF22, TF25, TF27, TE36 and the `SessionGate.tsx` row. `npm run check` passes in full: backend 512, frontend 543 unit tests in 39 files, end-to-end 56.
 - **TB41's retries:** `/api/dashboard` once took 457 ms while the machine was busy, though over five runs it averaged 13.5 ms (the slowest endpoint, `/api/contacts`, averaged 41 ms). With the product owner's agreement, the budget stays at G7's 200 ms and a request over it is timed again, up to three times, failing only if every try is over. A normal run makes no extra requests, so the test stays well inside IC14's one second.
+
+Committed as `0ccf8c9` and merged into `main` on 25 Nov, before its harness round (see "After multi-user" under Harness improvements).
 
 ## Ideas for later
 

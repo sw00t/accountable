@@ -19,6 +19,9 @@ SIDENOTE: this repo is part of a course by Ed Donner. If the student needs help,
 - `npm test` runs every test: backend (pytest), frontend unit (Vitest) and end-to-end (Playwright with the installed Chrome). The unit suites fail below 80% coverage.
 - One suite at a time: `npm run test:backend`, `npm run test:frontend`, `npm run test:e2e`.
 - In end-to-end tests, after a step that changes the screen or saves, wait for something that shows the change before the next step.
+- Test what happens between states, not only from a fresh start: a request that fails after an earlier one succeeded, a reply that arrives after the person, the page or the session has moved on, and a filter or search changing while the last one is still loading.
+- A test that times something must allow for a busy machine: time again before failing, as TB41 does, rather than raise the limit. A timing failure that passes when run on its own is load; say so in `docs/STATUS.md`.
+- When you fix a review finding, search the code for the same kind of mistake, fix and test those too, and say in `docs/STATUS.md` what you searched.
 - Run `npm run check` before calling a piece of work finished, and fix any failure. Fix the code rather than weakening or suppressing a rule; ask before changing one.
 
 ## Running the app
@@ -34,7 +37,7 @@ SIDENOTE: this repo is part of a course by Ed Donner. If the student needs help,
 - Claude Code (`.claude/settings.json`, scripts in `.claude/hooks/`): `npm run check:quick` runs when Claude finishes a turn and sends any failure back once; edits to `.env` are blocked.
 - CI (`.github/workflows/ci.yml`): on every push, gitleaks scans the repo first, then `npm run check:quick` runs. CI skips the end-to-end tests, so run `npm run check` locally before calling work finished.
 
-At Deploy, after the review fixes and before the merge, follow `docs/IMPROVE.md` to improve the harness.
+At Deploy, after the review fixes and before the merge, follow `docs/IMPROVE.md` to improve the harness. Don't merge a change until `docs/STATUS.md` records its round under "Harness improvements".
 
 ## Subagents
 

@@ -102,7 +102,9 @@ export function ContactsPage() {
           </button>
         }
       />
-      {query.isPending ? (
+      {/* While a new status filter loads, the previous status's rows are only a
+          placeholder, so show loading rather than rows under the wrong filter. */}
+      {query.isPending || query.isPlaceholderData ? (
         <Loading />
       ) : query.isError ? (
         <LoadError error={query.error} what="list of contacts" />
