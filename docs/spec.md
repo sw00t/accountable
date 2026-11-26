@@ -22,6 +22,8 @@ It has five sections:
 
 A top bar on every page has a search box that finds any organization, contact or deal by part of its name, and a menu under your initials with the theme and signing out. The theme is Dark (the default), Light or System, which follows the device's setting, and the browser remembers the choice.
 
+Accountable works on a phone too, in its browser at the same address, in portrait and landscape. Everything that can be done on a laptop can be done on a phone: the sections sit in a tab bar at the bottom (a rail on the left in landscape), tables become lists, forms open full screen, and the pipeline shows one stage at a time, with a "Move to" button on each card in place of dragging. On a phone, Dark is AMOLED dark, with a true black page.
+
 ### Users
 
 - A small sales team sharing one Accountable on the web, each person signed in as themselves. Everyone can see and change everything.
@@ -48,7 +50,7 @@ Each area file holds that area's concerns, requirements and design (data model, 
 | [platform.md](specs/platform.md) | running the app, offline use, saving, the two databases, migrations, money and dates, errors, sample data, running on the web and Render, settings, architecture, repository layout, libraries, data model conventions and indexes, API conventions, testing |
 | [accounts.md](specs/accounts.md) | signing in and out, local sign-in for development and tests, sessions, who added and last changed each record, the user menu; the `users` table, the token check and its endpoints; the sign-in screen and the menu |
 | [search.md](specs/search.md) | the top bar's search for organizations, contacts and deals; ignoring case on both databases; its endpoint and screen |
-| [look-and-feel.md](specs/look-and-feel.md) | light, dark and System themes, the page layout with its top bar, dark mode surfaces, page header, record pages, brand fonts, colors, stage colors, things to avoid, copy |
+| [look-and-feel.md](specs/look-and-feel.md) | light, dark and System themes, AMOLED dark on phones, the page layout with its top bar, the phone layout with its tab bar, dark mode surfaces, page header, record pages, brand fonts, colors, stage colors, things to avoid, copy |
 | [tables-and-forms.md](specs/tables-and-forms.md) | what the organizations, contacts and deals tables share, the side-panel forms, validation |
 | [organizations.md](specs/organizations.md) | organizations: fields, table, record page, deleting; the `organizations` table and its endpoints |
 | [contacts.md](specs/contacts.md) | contacts: fields, table, status filter, record page, deleting; the `contacts` table and its endpoints |
@@ -68,17 +70,18 @@ Each requirement has an ID so tests, code and status notes can refer to it.
 | S1 to S4 | Sample data | [platform.md](specs/platform.md#sample-data) |
 | U1 to U7 | Signing in | [accounts.md](specs/accounts.md#signing-in) |
 | U8 to U10 | Who added what | [accounts.md](specs/accounts.md#who-added-what) |
-| U11 to U12 | User menu | [accounts.md](specs/accounts.md#user-menu) |
-| F1 to F7 | Search | [search.md](specs/search.md#search) |
-| M1 to M5 | Light and dark mode | [look-and-feel.md](specs/look-and-feel.md#light-and-dark-mode) |
-| T1 to T7 | Tables (organizations, contacts and deals) | [tables-and-forms.md](specs/tables-and-forms.md#tables-organizations-contacts-and-deals) |
+| U11 to U13 | User menu | [accounts.md](specs/accounts.md#user-menu) |
+| F1 to F8 | Search | [search.md](specs/search.md#search) |
+| M1 to M6 | Light and dark mode | [look-and-feel.md](specs/look-and-feel.md#light-and-dark-mode) |
+| N1 to N7 | Phones | [look-and-feel.md](specs/look-and-feel.md#phones) |
+| T1 to T8 | Tables (organizations, contacts and deals) | [tables-and-forms.md](specs/tables-and-forms.md#tables-organizations-contacts-and-deals) |
 | V1 to V5 | Validation | [tables-and-forms.md](specs/tables-and-forms.md#validation) |
-| O1 to O4 | Organizations | [organizations.md](specs/organizations.md#organizations) |
-| C1 to C6 | Contacts | [contacts.md](specs/contacts.md#contacts) |
-| D1 to D10 | Deals | [deals.md](specs/deals.md#deals) |
-| P1 to P8 | Pipeline | [pipeline.md](specs/pipeline.md#pipeline) |
-| A1 to A6 | Activities and follow-ups | [activities.md](specs/activities.md#activities-and-follow-ups) |
-| H1 to H8 | Dashboard | [dashboard.md](specs/dashboard.md#dashboard) |
+| O1 to O5 | Organizations | [organizations.md](specs/organizations.md#organizations) |
+| C1 to C7 | Contacts | [contacts.md](specs/contacts.md#contacts) |
+| D1 to D11 | Deals | [deals.md](specs/deals.md#deals) |
+| P1 to P11 | Pipeline | [pipeline.md](specs/pipeline.md#pipeline) |
+| A1 to A7 | Activities and follow-ups | [activities.md](specs/activities.md#activities-and-follow-ups) |
+| H1 to H9 | Dashboard | [dashboard.md](specs/dashboard.md#dashboard) |
 
 ### Concerns
 
@@ -109,6 +112,9 @@ Questions settled while the product was designed. They're numbered because requi
 | 21. Supabase's Data API and the publishable key. | [platform.md](specs/platform.md#concerns) |
 | 22. Render's free plan sleeps. | [platform.md](specs/platform.md#concerns) |
 | 23. Reaching Supabase from Render. | [platform.md](specs/platform.md#concerns) |
+| 24. What counts as a phone. | [look-and-feel.md](specs/look-and-feel.md#concerns) |
+| 25. AMOLED dark and the brand's dark surfaces. | [look-and-feel.md](specs/look-and-feel.md#concerns) |
+| 26. No hover and no dragging on a phone. | [look-and-feel.md](specs/look-and-feel.md#concerns) |
 
 ### Design
 
@@ -119,12 +125,12 @@ Questions settled while the product was designed. They're numbered because requi
 | Deployment | [platform.md](specs/platform.md#deployment) |
 | Data model | conventions and indexes in [platform.md](specs/platform.md#data-model); each table in its area file; who added and last changed each record in [accounts.md](specs/accounts.md#data-model) |
 | API | conventions, errors, the `Authorization` and `X-Local-Date` headers and `GET /health` in [platform.md](specs/platform.md#api); checking tokens in [accounts.md](specs/accounts.md#api); each section's endpoints in its area file |
-| Screens | the shared layout with its top bar, page header and record pages in [look-and-feel.md](specs/look-and-feel.md#screens); sign-in and the user menu in [accounts.md](specs/accounts.md#screens); the search box in [search.md](specs/search.md#screens); tables and forms in [tables-and-forms.md](specs/tables-and-forms.md#screens); the timeline, pipeline and dashboard in their area files |
+| Screens | the shared layout with its top bar, page header and record pages, on a laptop and a phone, in [look-and-feel.md](specs/look-and-feel.md#screens); sign-in and the user menu in [accounts.md](specs/accounts.md#screens); the search box in [search.md](specs/search.md#screens); tables and forms in [tables-and-forms.md](specs/tables-and-forms.md#screens); the timeline, pipeline and dashboard in their area files |
 | Brand: fonts, Colors, Stage colors, things to avoid, copy | [look-and-feel.md](specs/look-and-feel.md#brand) |
 
 ## Not in Accountable yet
 
-Roles and permissions; signing up in the app, resetting a password, and signing in with Google or a magic link; a full record of who did what (each record keeps only who added it and who last changed it, and stage changes don't record who made them); moving data from a local SQLite file to Supabase; phone layouts; AI features; email, calendar and phone integrations; currencies other than US dollars; reports beyond the dashboard; tags and custom fields; changing the pipeline stages; and import or export.
+Roles and permissions; signing up in the app, resetting a password, and signing in with Google or a magic link; a full record of who did what (each record keeps only who added it and who last changed it, and stage changes don't record who made them); moving data from a local SQLite file to Supabase; installing Accountable on a phone's home screen, using it offline, and layouts made for tablets; AI features; email, calendar and phone integrations; currencies other than US dollars; reports beyond the dashboard; tags and custom fields; changing the pipeline stages; and import or export.
 
 ## Roadmap
 

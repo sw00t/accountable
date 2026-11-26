@@ -20,6 +20,7 @@ Concern 7 (when a deal counts as won) is in [deals.md](deals.md#concerns), and C
 - **H6** Recent activity: the 10 latest activities and stage changes across everything, each linking to its record.
 - **H7** Follow-ups: overdue first, oldest first, then upcoming, soonest first, each linking to its contact or deal (A6).
 - **H8** Every figure matches the data. Marking a deal won or logging a follow-up shows on the dashboard the next time it's opened, with no refresh needed.
+- **H9** On a phone the dashboard is one column in portrait: the four headline figures as a two-by-two grid of tiles, then revenue won, follow-ups, recent activity, the pipeline by stage, the funnel, and won and lost. In landscape it's two columns. Charts fill their panel's width and keep their tooltips, which open on a tap.
 
 ## Design
 
@@ -43,3 +44,5 @@ Concern 7 (when a deal counts as won) is in [deals.md](deals.md#concerns), and C
 4. Row 4: follow-ups (6 columns) and recent activity (6 columns).
 
 Charts have light gridlines, no chart borders, tooltips with exact amounts and axis labels in short money form. The line chart uses Sea Green with a soft fill under the line (the one gradient on the page). The bar chart uses Sea Green for won and Coral for lost.
+
+**Dashboard on a phone (H9).** Headline tiles are half the width each, with the value in JetBrains Mono 22 px. Each chart is 150 to 180 px high, with fewer axis labels so they don't crowd (every third month). The follow-ups and recent activity lists use rows at least 56 px high, with Mark done as a 44 px button. The funnel keeps its rows, with the stage name and count above each bar rather than beside it.

@@ -17,6 +17,7 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 - **F5** The Down and Up arrow keys move through the results, and Escape closes them. With nothing found, the box says "No organizations, contacts or deals match "xyz"."
 - **F6** Screen readers announce the box as a search with a list of suggestions, the number of results, and the highlighted result.
 - **F7** Results appear within 200 ms of typing pausing, at the sizes in G7. The frontend sends at most one request per pause, and a reply to older text never replaces newer results.
+- **F8** On a phone, the top bar has a search button in place of the box. Tapping it opens search full screen: the box at the top with the keyboard up and a Cancel button beside it, and the results filling the screen below, grouped and behaving as F2 to F7 say. Choosing a result opens the record and closes search; Cancel or the back button closes it and clears the box.
 
 ## Design
 
@@ -37,5 +38,7 @@ Organizations, contacts and deals each have a `search_name` column (text, requir
 A deal's second line is its organization and stage separated by a middle dot ("Garcia Freight · Proposal"), or only the stage when it has no organization. An organization with no industry, or a contact with no organization, has no second line.
 
 Nothing is highlighted until an arrow key is pressed. Down and Up wrap around the list, Up with nothing highlighted goes to the last result, and Down opens the results again after Escape. Enter with nothing highlighted does nothing. Escape closes the results and keeps the typed text. Going to another page, through a sidebar link, the back button or any other way, clears the box and closes the results; a change only to the address's query, such as a table filter, doesn't count as another page. Moving focus away from the box closes the results, and focusing it again opens them.
+
+**Search on a phone (F8).** The box fills the width less the Cancel button, 44 px high, on the panel color. Results are rows at least 52 px high, with the same icon, name and second line as on a laptop, and the screen scrolls when they don't fit.
 
 When a search fails, the results panel says "Couldn't search." followed by the usual detail (G8). For screen readers (F6), a hidden status reads the total number of matches as "N results", or the no-results text, and each group is named.

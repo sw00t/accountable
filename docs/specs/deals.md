@@ -21,6 +21,7 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 - **D8** Table columns: name, organization, main contact, stage, value, probability, expected revenue (value times probability), close date. Search covers name, organization and main contact. The table has a stage filter.
 - **D9** The deal page shows its details, its organization and main contact, and its timeline of activities and stage changes, newest first.
 - **D10** Deleting a deal deletes its activities and stage changes.
+- **D11** On a phone, the deals list (T8) shows each deal's name, its organization and stage as the second line ("Garcia Freight · Proposal"), and its value, with the Late badge after the name when it applies. The stage filter sits above the list as on a laptop.
 
 ## Design
 

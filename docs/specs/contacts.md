@@ -1,6 +1,6 @@
 # Spec: Contacts
 
-Part of the [Accountable spec](../spec.md), which has the summary of the whole product and the index. This file covers the people we deal with, leads and customers included: their fields, table, status filter, record page and what deleting one does. The timeline on a contact's page is in [activities.md](activities.md).
+Part of the [Accountable spec](../spec.md), which has the summary of the whole product and the index. This file covers the people we deal with, leads and customers included: their fields, table, status filter, record page and what deleting one does, with the list and page on a phone. The timeline on a contact's page is in [activities.md](activities.md).
 
 ## Requirements
 
@@ -12,6 +12,7 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 - **C4** The contact page shows their details, their organization, the deals where they're the main contact, and their timeline.
 - **C5** The timeline holds the contact's own activities plus the activities and stage changes of deals where they're the main contact, newest first. Entries from a deal name the deal.
 - **C6** Deleting a contact keeps their deals, which are left with no main contact. Activities logged on the contact are deleted.
+- **C7** On a phone, the contacts list (T8) shows each contact's name, their organization as the second line, and their status. The contact page has Call and Email buttons beside Log activity, which open the phone's dialer or mail app with the contact's number or address; each is left out when the contact has none.
 
 ## Design
 

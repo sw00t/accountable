@@ -10,6 +10,7 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 - **O2** Table columns: name, industry, website, number of contacts, number of open deals, open pipeline value. Search covers name, industry and website.
 - **O3** The organization page shows its details, its contacts and its deals, each with a link to the record and a way to add a new contact or deal already linked to it.
 - **O4** Deleting an organization keeps its contacts and deals, which are left with no organization. Their activities stay.
+- **O5** On a phone, the organizations list (T8) shows each organization's name, its industry as the second line, and its open pipeline value.
 
 ## Design
 

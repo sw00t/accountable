@@ -617,6 +617,7 @@ Committed as `0ccf8c9` and merged into `main` on 25 Nov, before its harness roun
 ## A phone view (phone-view)
 
 - **Plan:** `docs/changes/phone-view/intent.md` is agreed. Everything that works on a laptop works on a phone, and the pipeline shows one stage at a time with a "Move to" choice on each card. At phone widths only, Dark is AMOLED dark with a true black page, and the default. The product owner signs off portrait and landscape on a real phone. The product owner reviews each stage before the next starts.
+- **Design:** three phone mockups in `docs/mockups/phone/`, all in AMOLED dark: A (tab bar, rail in landscape), B (menu drawer) and C (quick add). The product owner chose A, near-black Midnight panels on the black page (Concern 25), and Move up and Move down for a card's place within a stage. The spec describes the product with the phone view: Concerns 24 to 26, M6, N1 to N7, T8, P9 to P11, U13, F8, H9, A7, C7, D11 and O5, phone screens in each area file, end-to-end tests at phone sizes and the by-hand sign-off in `platform.md`'s Testing, and `docs/spec.md`'s summary, index and "Not in Accountable yet". No code yet.
 
 ## Ideas for later
 

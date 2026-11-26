@@ -18,6 +18,7 @@ Part of the [Accountable spec](../spec.md), which has the summary of the whole p
 - **A4** Activities can be edited and deleted from the timeline. Deleting asks first.
 - **A5** An activity logged on a deal also appears on the timeline of the deal's main contact (C5).
 - **A6** A follow-up that isn't done shows on the dashboard: overdue if its date is before today, upcoming if it's today or within 7 days (Concern 10). Each has a "Mark done" button, and done follow-ups leave the list.
+- **A7** On a phone, the record page's "Log activity" button (see Record pages in [look-and-feel.md](look-and-feel.md#screens)) opens A3's form full screen, with the type chosen as Call. Saving closes it and the new entry is at the top of the timeline. Logging a call with a follow-up still takes under 30 seconds. Each timeline entry's Edit and Delete sit behind its More button (Concern 26 in [look-and-feel.md](look-and-feel.md#concerns)).
 
 ## Design
 
