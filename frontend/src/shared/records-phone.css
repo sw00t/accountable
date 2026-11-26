@@ -99,7 +99,14 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
   }
-  .side-panel .log-row .btn {
-    width: 100%;
+  /* The type choice: three 44 px segments across the width (N3). */
+  .side-panel .type-choice {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-self: stretch;
+  }
+  .side-panel .type-choice label {
+    justify-content: center;
+    min-height: 44px;
   }
 }

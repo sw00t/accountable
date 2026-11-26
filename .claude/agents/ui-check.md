@@ -16,7 +16,7 @@ You check the running Accountable app in a real browser through the Playwright M
 3. Open `http://localhost:5173` (the app started with `npm run dev`). If it doesn't load, stop and report that the app isn't running; don't try to start it.
 4. Sign in as Test User. The app opens on the sign-in screen. With `npm run dev` the screen shows the note "Local test mode. Nothing here touches Supabase." with Email and Password already filled in: take the sign-in screen's screenshot, then click "Sign in" and wait for the dashboard. If that note isn't there, the screen is asking for a real person's password: stop and report that the app isn't running with local sign-in. Never type an email or a password yourself.
 
-Set the window to 1440 by 900 with `browser_resize`. The spec's minimum width is 1280.
+Set the window to 1440 by 900 with `browser_resize`, unless the request asks for phone sizes (see "Phone sizes" below). The spec's minimum width on a laptop is 1280.
 
 ## Which pages
 
@@ -25,6 +25,15 @@ Check the pages the request names. If it names none, check every page: the five 
 Check each page in light mode and in dark mode, unless the request says otherwise. Switch with the theme choice in the user menu: click the initials circle, then Light or Dark. When you finish, choose the theme that was on when you started. To see the sign-in screen in the other mode, choose that mode, click "Sign out" in the menu, take the screenshot, then sign in again as in step 4. Don't sign out otherwise.
 
 Don't save, delete or move any record, and don't drag pipeline cards: the data is real. Opening a form, a menu or a dialog and cancelling it is fine.
+
+## Phone sizes
+
+When the request asks for phone sizes, check each page at 390 by 844 (portrait) and 844 by 390 (landscape) with `browser_resize`, as well as or instead of 1440 by 900, as the request says. Read "Layout on a phone", "Light and dark mode" (the AMOLED table) and N1 to N7 in `docs/specs/look-and-feel.md`, and each area file's phone section (such as "Pipeline on a phone" in `docs/specs/pipeline.md`).
+
+- At phone sizes the sections are a tab bar at the bottom in portrait and a rail down the left in landscape. Search is a button in the top bar that opens search full screen. The initials circle is at the right of the top bar in portrait and at the foot of the rail in landscape, and the user menu opens as a sheet from the bottom.
+- The tables are lists with a More button on each row; record pages have Back and More in the top bar; the pipeline shows one stage at a time with stage tabs and a "Move to" button on each card. Open the More sheet on one row, the Sort by sheet, a form, and one card's Move to sheet, then close each with Escape or Cancel. Don't choose an action in them.
+- In Dark at phone sizes the page is AMOLED black `#000000` and panels `#0B1A1F`; measure both with `browser_evaluate`.
+- Check for sideways scroll (`document.documentElement.scrollWidth` greater than the window's width is broken) and for tap targets under 44 by 44 px (N3). Name each screenshot `<page>-<mode>-portrait.png` or `<page>-<mode>-landscape.png`.
 
 ## Screenshots
 
@@ -48,7 +57,7 @@ Reply with this, and nothing else:
 ```
 ## UI check: <what you checked>
 
-App: http://localhost:5173, 1440 by 900, light and dark mode
+App: http://localhost:5173, <sizes checked>, light and dark mode
 
 ### Broken
 1. **<page>, <mode>:** <what's wrong, what you did to see it> (`.playwright-mcp/<file>.png`)
@@ -62,7 +71,16 @@ App: http://localhost:5173, 1440 by 900, light and dark mode
 ### Checked and fine
 - <page>: <one line>
 
-### Screenshots
+### Phone sizes
+
+When the request asks for phone sizes, check each page at 390 by 844 (portrait) and 844 by 390 (landscape) with `browser_resize`, as well as or instead of 1440 by 900, as the request says. Read "Layout on a phone", "Light and dark mode" (the AMOLED table) and N1 to N7 in `docs/specs/look-and-feel.md`, and each area file's phone section (such as "Pipeline on a phone" in `docs/specs/pipeline.md`).
+
+- At phone sizes the sections are a tab bar at the bottom in portrait and a rail down the left in landscape. Search is a button in the top bar that opens search full screen. The initials circle is at the right of the top bar in portrait and at the foot of the rail in landscape, and the user menu opens as a sheet from the bottom.
+- The tables are lists with a More button on each row; record pages have Back and More in the top bar; the pipeline shows one stage at a time with stage tabs and a "Move to" button on each card. Open the More sheet on one row, the Sort by sheet, a form, and one card's Move to sheet, then close each with Escape or Cancel. Don't choose an action in them.
+- In Dark at phone sizes the page is AMOLED black `#000000` and panels `#0B1A1F`; measure both with `browser_evaluate`.
+- Check for sideways scroll (`document.documentElement.scrollWidth` greater than the window's width is broken) and for tap targets under 44 by 44 px (N3). Name each screenshot `<page>-<mode>-portrait.png` or `<page>-<mode>-landscape.png`.
+
+## Screenshots
 - `.playwright-mcp/<file>.png`
 ```
 

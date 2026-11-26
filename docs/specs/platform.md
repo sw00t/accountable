@@ -107,16 +107,22 @@ frontend/
     shared/               used by every section: layout with the top bar, DataTable, SidePanel,
                           ConfirmDialog, toasts, small display pieces, format and stage
                           helpers, API client, generated API types, theme (tokens for both
-                          modes, saving the theme) and fonts
-    account/              sign-in screen, session, user menu with the theme choice
-    search/               the top bar's search box and results
+                          modes and AMOLED dark, saving the theme) and fonts. For a phone:
+                          phone.ts (PHONE_QUERY, usePhone), TabBar, Sheet, MoreMenu,
+                          TablePhone (lists, Sort by, paging), RecordHeader, topBarSlot,
+                          AddButton, and the phone stylesheets theme/phone.css,
+                          tables-phone.css and records-phone.css
+    account/              sign-in screen, session, user menu with the theme choice (a sheet
+                          on a phone)
+    search/               the top bar's search box and results, full screen on a phone
     organizations/        tables, record page, form, Query hooks and tests for one section
     contacts/
     deals/
     activities/           timeline and Log activity form, used by contacts and deals
-    pipeline/
-    dashboard/
-e2e/                      Playwright Test
+    pipeline/             the drag board on a laptop; on a phone PhonePipeline, StageTabs,
+                          MoveSheet and pipeline-phone.css
+    dashboard/            with dashboard-phone.css for a phone
+e2e/                      Playwright Test; e2e/phone/ runs at phone sizes
 data/                     SQLite file (git-ignored)
 ```
 
@@ -124,6 +130,7 @@ Frontend unit tests sit next to the code they test. The rules for adding to this
 
 - A new section gets a backend module in `routers/` and a frontend folder. Its endpoints, queries, pages, form and hooks live there.
 - Code moves to `shared/` only when a second section needs it.
+- Phone rules live in stylesheets of their own, each inside the one phone query (`PHONE_QUERY` in `shared/phone.ts`), so a laptop never sees them.
 - Business rules stay in `rules.py` and the backend modules, never in the frontend.
 - Every schema change is an Alembic migration, so existing data is upgraded safely.
 - The frontend's API types are generated from the backend with `npm run types`, never written by hand.

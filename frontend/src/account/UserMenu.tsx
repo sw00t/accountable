@@ -64,8 +64,16 @@ export function UserMenu() {
   const contents = (
     <>
       <div className="user-menu-person">
-        {person.name && <p className="user-menu-name">{person.name}</p>}
-        <p className="user-menu-email">{person.email}</p>
+        {/* U13: on a phone the sheet shows the circle beside the name and email. */}
+        {phone && (
+          <span className="user-menu-avatar" aria-hidden="true">
+            {initials(person.name, person.email)}
+          </span>
+        )}
+        <div>
+          {person.name && <p className="user-menu-name">{person.name}</p>}
+          <p className="user-menu-email">{person.email}</p>
+        </div>
       </div>
       <p className="user-menu-label" id="user-menu-theme">
         Theme

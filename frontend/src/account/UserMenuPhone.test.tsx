@@ -26,6 +26,11 @@ test("the menu opens in a sheet with the name, email, theme choice and Sign out"
   expect(within(sheet).getByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
 });
 
+test("the sheet shows the initials circle beside the name (U13)", async () => {
+  const { sheet } = await openSheet();
+  expect(sheet.querySelector(".user-menu-avatar")).toHaveTextContent("TU");
+});
+
 test("the keys work as on a laptop: the arrows move, Escape closes and focus goes back", async () => {
   await openSheet();
   expect(screen.getByRole("menuitemradio", { name: "Light" })).toHaveFocus();

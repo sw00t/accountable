@@ -144,3 +144,16 @@ test("an edit saves the type that was chosen", async () => {
     body: { type: "email" },
   });
 });
+
+test("in its own sheet, adding shows Cancel beside Log activity (Forms on a phone)", async () => {
+  const onCancel = vi.fn();
+  renderWithProviders(<LogActivityForm on={{ contactId: 7 }} onCancel={onCancel} />);
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(onCancel).toHaveBeenCalledOnce();
+  expect(screen.getByRole("button", { name: "Log activity" })).toBeInTheDocument();
+});
+
+test("inline on a laptop, adding has no Cancel", () => {
+  renderWithProviders(<LogActivityForm on={{ contactId: 7 }} />);
+  expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+});

@@ -119,6 +119,18 @@ Three choices keep the parts apart and the laptop unchanged:
 | `e2e/phone/journeys.spec.ts` | TE41, TE43, TE44 | [W2.4](#w2-4) | New |
 | `e2e/phone/pipeline.spec.ts` | TE42 | [W3.3](#w3-3) | New |
 
+<a id="pt10"></a>**PT10 Fixes from the PH4 checks** (added in PH4; ui-check at phone sizes and a check of every area file against the build found these)
+
+| File | Purpose | Work | Status |
+| --- | --- | --- | --- |
+| `frontend/src/shared/TablePhone.tsx`, `DataTable.tsx`, `tables-phone.css` | `TableFilters`: in landscape a list's filters move into the top bar's row (Layout on a phone); the deals stage filter goes under the search box in portrait | [W4.2](#w4-2) | Changed |
+| `frontend/src/shared/theme/phone.css` | The summary under a title wraps in portrait and gives way in landscape, so the top bar stays one row; full-screen search covers the tab bar; form fields at 16 px (N7); date fields inside the margins; activity icons on the raised color; panels with 12 px corners | [W4.2](#w4-2) | Changed |
+| `frontend/src/activities/LogActivityForm.tsx`, `shared/records-phone.css` | In its sheet, Cancel beside Log activity (Forms on a phone), and the type choice as three 44 px segments | [W4.2](#w4-2) | Changed |
+| `frontend/src/account/UserMenu.tsx`, `account.css` | U13: the initials circle beside the name in the sheet, and the theme choice as one 44 px control with the chosen one ringed | [W4.2](#w4-2) | Changed |
+| `frontend/src/dashboard/dashboard-phone.css` | Follow-up and activity descriptions run to two lines; panels with 14 px padding | [W4.2](#w4-2) | Changed |
+| `frontend/src/test-setup.ts` | `setPhone("landscape")`, so unit tests can cover landscape | [W4.2](#w4-2) | Changed |
+| `e2e/phone/journeys.spec.ts` | TE41, TE43 and TE44 run at every size (W4.1), and TE41 checks search covers the tab bar | [W4.1](#w4-1) | Changed |
+
 ### Docs and harness
 
 <a id="pt9"></a>**PT9 Docs**
@@ -145,7 +157,7 @@ Phases run in order, and each ends with `npm run check` passing and a note in `d
 | <a id="ph1"></a>PH1 | Foundations | [PT1](#pt1), [PT2](#pt2), [PT8](#pt8) | At phone sizes every page has the tab bar (the rail in landscape), the title and main action in the top bar, AMOLED dark in Dark, and no sideways scroll on the page shell; on a laptop nothing has changed and every existing test passes. |
 | <a id="ph2"></a>PH2 | Tables, forms, records, search and the menu | [PT3](#pt3), [PT4](#pt4), [PT5](#pt5), [PT8](#pt8) | Every list, form, dialog, record page, the timeline, search and the user menu work on a phone with no hover; a call with a follow-up is logged from a contact found by search in under 30 seconds (SC5). |
 | <a id="ph3"></a>PH3 | Pipeline and dashboard | [PT6](#pt6), [PT7](#pt7), [PT8](#pt8) | The pipeline works one stage at a time with Move to, Move up and Move down, kept after a reload; the dashboard reads in one column, and two in landscape (SC4). |
-| <a id="ph4"></a>PH4 | Finish | [PT8](#pt8), [PT9](#pt9) | Every page passes TE38 in portrait, landscape and at 360 px, light and AMOLED dark (SC2, SC3); ui-check finds nothing broken at phone sizes or changed on a laptop (SC6); the docs match what was built; the product owner signs off on a real phone after Deploy (SC7). |
+| <a id="ph4"></a>PH4 | Finish | [PT8](#pt8), [PT9](#pt9), [PT10](#pt10) | Every page passes TE38 in portrait, landscape and at 360 px, light and AMOLED dark (SC2, SC3); ui-check finds nothing broken at phone sizes or changed on a laptop (SC6); the docs match what was built; the product owner signs off on a real phone after Deploy (SC7). |
 
 ### Work items
 

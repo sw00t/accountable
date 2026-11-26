@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 
 import { usePhone } from "./phone";
-import { PhoneList, PhonePager, SortBy, type PhoneRow } from "./TablePhone";
+import { PhoneList, PhonePager, SortBy, TableFilters, type PhoneRow } from "./TablePhone";
 import "./tables-phone.css";
 
 export const PAGE_SIZE = 25;
@@ -195,7 +195,7 @@ export function DataTable<T>({
           />
         </label>
         {phone && <SortBy table={table} />}
-        {filters}
+        {phone ? <TableFilters>{filters}</TableFilters> : filters}
       </div>
 
       {rows.length === 0 ? (

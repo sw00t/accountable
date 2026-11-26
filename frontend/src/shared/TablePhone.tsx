@@ -1,9 +1,12 @@
 // The phone's version of a table (T8): rows as a list with a More menu, Sort by, and paging.
-import { useState, type ReactNode } from "react";
+import { useContext, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { Column, Row, Table } from "@tanstack/react-table";
 import { ArrowDownUp, Check } from "lucide-react";
 import { MoreMenu } from "./MoreMenu";
+import { usePhoneShape } from "./phone";
 import { Sheet } from "./Sheet";
+import { TopBarSlot } from "./topBarSlot";
 
 /** What a phone shows for a row: its name, a second line, and a status, stage or amount. */
 export type PhoneRow = { name: string; badge?: ReactNode; detail?: ReactNode; end?: ReactNode };
@@ -135,4 +138,17 @@ export function PhonePager({ first, last, total, table }: PagerProps) {
       </button>
     </div>
   );
+}
+
+/**
+ * A table's filters. In landscape on a phone they move into the top bar's row, beside the
+ * title, so the list keeps the screen's little height (spec Layout on a phone).
+ */
+export function TableFilters({ children }: { children: ReactNode }) {
+  const slot = useContext(TopBarSlot);
+  const landscape = usePhoneShape() === "landscape";
+  if (!children) return null;
+  return landscape && slot
+    ? createPortal(<div className="topbar-filters">{children}</div>, slot)
+    : children;
 }

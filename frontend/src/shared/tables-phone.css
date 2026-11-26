@@ -25,9 +25,13 @@
     flex: none;
     min-height: 44px;
   }
-  .table-panel.phone .filter-select {
+  .table-panel.phone .filter-select,
+  .table-panel.phone .stage-filter {
     order: 1;
     flex: 1 1 100%;
+  }
+  .table-panel.phone .stage-filter select {
+    width: 100%;
   }
 
   .phone-list {
@@ -171,5 +175,24 @@
   }
   .dialog-actions {
     flex-direction: column-reverse;
+  }
+
+  /* Landscape: the filters share the top bar's row with the title, and scroll sideways. */
+  .app.landscape .topbar-filters {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-left: 8px;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* The end fades, so a filter cut off there reads as more to scroll to (alpha only). */
+    mask-image: linear-gradient(to left, transparent, var(--ink) 16px);
+  }
+  .app.landscape .topbar-filters .filter-tabs {
+    flex: none;
+  }
+  .app.landscape .topbar-filters .filter-tabs button {
+    min-height: 44px;
+    white-space: nowrap;
   }
 }

@@ -144,9 +144,6 @@
     margin-block: 0;
     margin-right: 0;
   }
-  .app.landscape .topbar .page-head {
-    flex: none;
-  }
   /* The row's ends fade, so a tab cut off at either end reads as more to scroll to; a mask uses
      only the alpha of its colors. */
   .app.landscape .topbar .stage-tabs {

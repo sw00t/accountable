@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { ColumnDef } from "@tanstack/react-table";
 import { setPhone } from "../test-setup";
 import { DataTable } from "./DataTable";
+import { TopBarSlot } from "./topBarSlot";
 
 type Row = { id: number; name: string; city: string; value: number };
 
@@ -125,4 +126,37 @@ test("turning into a laptop and back keeps the search and page (N5)", async () =
 test("without a phone row, the table stays a table", () => {
   setup(rows(2), false);
   expect(screen.getByRole("table")).toBeInTheDocument();
+});
+
+test("in landscape the filters move into the top bar; in portrait they stay above the list", () => {
+  const slot = document.createElement("div");
+  document.body.append(slot);
+  const filters = <div role="group" aria-label="Filter by city" />;
+  const table = (
+    <TopBarSlot.Provider value={slot}>
+      <DataTable<Row>
+        data={rows(2)}
+        columns={columns}
+        noun={["organization", "organizations"]}
+        rowName={(r) => r.name}
+        initialSort={[{ id: "name", desc: false }]}
+        phoneRow={phoneRow}
+        filters={filters}
+        addLabel="Add organization"
+        onOpen={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onAdd={vi.fn()}
+      />
+    </TopBarSlot.Provider>
+  );
+  const { rerender } = render(table);
+  const group = () => screen.getByRole("group", { name: "Filter by city" });
+  expect(slot).not.toContainElement(group());
+  setPhone("landscape");
+  rerender(table);
+  expect(slot).toContainElement(group());
+  setPhone(true);
+  expect(slot).not.toContainElement(group());
+  slot.remove();
 });

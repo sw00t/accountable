@@ -29,6 +29,25 @@
   select {
     min-height: 44px;
   }
+  /* The forms' own field rule sets 14 px, so it's matched here to keep 16 px. */
+  .field input,
+  .field select,
+  .field textarea {
+    font-size: 16px;
+  }
+  /* A date field's own minimum width would push it past the form's margin. */
+  .field input[type="date"] {
+    min-width: 0;
+  }
+  /* Activity icons inside a panel sit on the raised color (AMOLED dark). */
+  .li-icon:not(.stage) {
+    background: var(--raised);
+  }
+
+  /* Panels have 12 px corners on a phone (spec Layout on a phone). */
+  .panel {
+    border-radius: 12px;
+  }
 
   .app.phone {
     display: block;
@@ -73,11 +92,26 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* N1: the summary wraps under the title rather than being cut off. */
   .topbar .page-title .muted {
     font-size: 13px;
+  }
+  /*
+   * In landscape the top bar keeps one row: the title and main action take what they need, a
+   * page's filters or stage tabs share the rest, and the summary gives way first.
+   */
+  .app.landscape .topbar .page-head {
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+  }
+  .app.landscape .topbar .page-title .muted {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  /* Full-screen search sits above the tab bar too, so the top bar it lives in is raised with it. */
+  .topbar:has(.top-search.full) {
+    z-index: 80;
   }
   .add-noun {
     display: none;

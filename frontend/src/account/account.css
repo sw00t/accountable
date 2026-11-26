@@ -150,10 +150,46 @@
 /* U13: the menu as a sheet on a phone, and the circle at the rail's foot in landscape. */
 @media (max-width: 767px), (orientation: landscape) and (max-height: 499px) {
   .user-menu-sheet .user-menu-person {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 0 4px 12px;
+  }
+  .user-menu-avatar {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--sea-green);
+    color: var(--midnight);
+    font-weight: 600;
   }
   .user-menu-sheet .user-menu-sign-out {
     min-height: 52px;
+  }
+  /* The theme choice is one control: three segments side by side, 44 px high (U13). */
+  .user-menu-sheet .theme-choice {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 12px;
+    background: var(--ink-wash);
+  }
+  .user-menu-sheet .theme-choice button {
+    flex-direction: row;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 8px;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: 14px;
+  }
+  .user-menu-sheet .theme-choice button[aria-checked="true"] {
+    background: var(--raised);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 2px var(--sea-green);
   }
   /* The sign-in panel fills the width and sits near the top, clear of the phone's keyboard. */
   .sign-in {

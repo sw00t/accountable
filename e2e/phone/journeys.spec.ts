@@ -1,7 +1,7 @@
 import { test, expect, expectNoSideScroll, signIn, signInScreen, turnPhone } from "../fixtures";
 
-// The journeys run once, in portrait; layout.spec.ts covers every size.
-test.beforeEach(({}, info) => test.skip(info.project.name !== "phone", "portrait only"));
+// The journeys run at every size: portrait, landscape and 360 px (W4.1). A first visit on a
+// phone is AMOLED dark, and TE38 covers light.
 
 test("TE41 search for a contact, open them and log a call with a follow-up, in under 30 seconds", async ({ page }) => {
   await page.goto("/");
@@ -10,6 +10,13 @@ test("TE41 search for a contact, open them and log a call with a follow-up, in u
   // Back closes full-screen search and stays on the page (F8).
   await page.getByRole("button", { name: "Search" }).click();
   await expect(page.getByRole("combobox")).toBeFocused();
+  // Search fills the screen, over the tab bar or rail too.
+  const covered = await page.locator(".tab-bar").evaluate((bar) => {
+    const box = bar.getBoundingClientRect();
+    const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+    return Boolean(top?.closest(".top-search"));
+  });
+  expect(covered, "search covers the tab bar").toBe(true);
   await page.goBack();
   await expect(page.getByRole("combobox")).toHaveCount(0);
   await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();

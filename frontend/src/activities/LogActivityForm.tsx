@@ -212,6 +212,9 @@ export function LogActivityForm({ on, entry, onSaved, onCancel }: Props) {
             submitting={isSubmitting}
             onCancel={onCancel}
           />
+        ) : onCancel ? (
+          // In its own sheet on a phone, Cancel and Log activity sit at the bottom as in any form.
+          <FormActions submitLabel="Log activity" submitting={isSubmitting} onCancel={onCancel} />
         ) : (
           <div className="field">
             <button type="submit" className="btn" disabled={isSubmitting}>
