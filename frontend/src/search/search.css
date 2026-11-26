@@ -86,3 +86,34 @@
   padding: 4px 10px 6px;
   margin: 0;
 }
+
+/* F8: on a phone, search opens full screen from a button in the top bar. */
+@media (max-width: 767px), (orientation: landscape) and (max-height: 499px) {
+  .top-search.full {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    width: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-content: start;
+    gap: 12px 8px;
+    padding: calc(12px + env(safe-area-inset-top)) 16px 16px;
+    background: var(--page);
+    overflow-y: auto;
+  }
+  .top-search.full .top-search-field {
+    min-height: 44px;
+  }
+  .top-search.full .top-search-results {
+    position: static;
+    grid-column: 1 / -1;
+    width: auto;
+    max-width: none;
+    max-height: none;
+    box-shadow: none;
+  }
+  .top-search.full .top-search-option {
+    min-height: 52px;
+  }
+}

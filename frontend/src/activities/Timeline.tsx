@@ -6,6 +6,8 @@ import { ConfirmDialog } from "../shared/ConfirmDialog";
 import { FollowUpChip } from "../shared/FollowUpChip";
 import { formatDate } from "../shared/format";
 import { LoadError, Loading } from "../shared/Loading";
+import { MoreMenu } from "../shared/MoreMenu";
+import { usePhone } from "../shared/phone";
 import { SidePanel } from "../shared/SidePanel";
 import { useToast } from "../shared/Toast";
 import { localToday } from "../shared/today";
@@ -22,6 +24,7 @@ export function Timeline({ kind, id }: Props) {
   const toast = useToast();
   const today = localToday();
   const timeline = useTimeline(kind, id);
+  const phone = usePhone();
   const remove = useDeleteActivity();
   const markDone = useMarkDone();
   const [editing, setEditing] = useState<TimelineEntry | null>(null);
@@ -42,7 +45,8 @@ export function Timeline({ kind, id }: Props) {
 
   return (
     <div>
-      <LogActivityForm on={kind === "contact" ? { contactId: id } : { dealId: id }} />
+      {/* On a phone, the record's Log activity button opens the form instead (A7). */}
+      {!phone && <LogActivityForm on={kind === "contact" ? { contactId: id } : { dealId: id }} />}
       <section className="panel" aria-label="Timeline">
         <div className="panel-head">
           <h2>Timeline</h2>
@@ -54,7 +58,10 @@ export function Timeline({ kind, id }: Props) {
           <LoadError error={timeline.error} what="timeline" />
         ) : timeline.data.items.length === 0 ? (
           <div className="empty-state small">
-            <p>Nothing logged yet. Use the form above to log a call, email or note.</p>
+            <p>
+              Nothing logged yet. Use {phone ? "Log activity" : "the form above"} to log a call,
+              email or note.
+            </p>
           </div>
         ) : (
           <ol className="timeline">
@@ -96,7 +103,16 @@ export function Timeline({ kind, id }: Props) {
                 </div>
                 <span className="when">{formatDate(entry.on)}</span>
                 <div className="entry-actions">
-                  {entry.kind === "activity" && (
+                  {entry.kind === "activity" && phone && (
+                    <MoreMenu
+                      title={`${TYPE_WORDS[entry.type!]}: ${entry.text}`}
+                      actions={[
+                        { label: "Edit", onSelect: () => setEditing(entry) },
+                        { label: "Delete", onSelect: () => setDeleting(entry), danger: true },
+                      ]}
+                    />
+                  )}
+                  {entry.kind === "activity" && !phone && (
                     <>
                       <button
                         type="button"

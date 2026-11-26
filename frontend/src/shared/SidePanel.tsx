@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import "./tables-phone.css";
 
 type Props = {
   title: string;
@@ -8,12 +9,15 @@ type Props = {
   children: ReactNode;
 };
 
-const FIELD = "input:not([type=hidden]), select, textarea, [data-autofocus]";
+const FIELD = "input:not([type=hidden]), select, textarea";
 
-/** Focuses the panel's first field, waiting for it if the form is still loading. */
+/** Focuses the panel's chosen or first field, waiting for it if the form is still loading. */
 function focusFirstField(panel: HTMLElement): () => void {
   const focusIfReady = () => {
-    const field = panel.querySelector<HTMLElement>(FIELD);
+    // A form can name the field to start in, such as "What happened" in Log activity (A7).
+    const field =
+      panel.querySelector<HTMLElement>("[data-autofocus]") ??
+      panel.querySelector<HTMLElement>(FIELD);
     field?.focus();
     return field !== null;
   };

@@ -62,7 +62,7 @@ export function ContactsPage() {
       {
         accessorKey: "last_activity_on",
         header: "Last activity",
-        meta: { numeric: true },
+        meta: { numeric: true, sortWords: ["earliest first", "latest first"] },
         cell: ({ getValue }) => formatDate(getValue<string | null>()),
       },
     ],
@@ -116,6 +116,11 @@ export function ContactsPage() {
           onDelete={(c) => setDeleting({ kind: "contact", id: c.id, name: c.name })}
           onAdd={() => setEditing("new")}
           addLabel="Add contact"
+          phoneRow={(c) => ({
+            name: c.name,
+            detail: c.organization_name,
+            end: <StatusBadge status={c.status} />,
+          })}
           filters={filters}
           emptyMessage={
             status

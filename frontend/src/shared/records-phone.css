@@ -1,0 +1,105 @@
+/*
+ * Record pages and the timeline on a phone (spec Record pages, A7). The query is PHONE_QUERY
+ * in shared/phone.ts.
+ */
+@media (max-width: 767px), (orientation: landscape) and (max-height: 499px) {
+  /* Back on the left and More on the right, in the top bar. */
+  .record-bar {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-left: -8px;
+  }
+
+  .record-head {
+    margin-bottom: 14px;
+  }
+  .record-head h1 {
+    font-size: 22px;
+    margin: 0;
+  }
+  .record-head .muted {
+    margin-top: 2px;
+  }
+  .record-status {
+    margin-top: 8px;
+  }
+  .record-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .record-buttons .btn {
+    flex: 1;
+  }
+
+  /* One column in portrait; details beside the timeline in landscape. */
+  .record {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .app.landscape .record {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .record > * {
+    min-width: 0;
+  }
+  .record .panel {
+    padding: 14px;
+  }
+  .details {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+  /* Linked records: the name gives way so a status or amount stays on screen. */
+  .linked li > :first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .linked li > :not(:first-child) {
+    flex: none;
+  }
+  .record .mini {
+    min-height: 44px;
+  }
+  /* N3: links in the details, linked records and timeline are 44 px tall to tap. */
+  .record a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Timeline rows: the date over the entry, and More on the right. */
+  .timeline li {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  .timeline .entry-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .timeline .when {
+    order: -1;
+    flex: 1 1 100%;
+    padding-left: 48px;
+  }
+  .timeline .entry-meta {
+    flex-wrap: wrap;
+  }
+
+  /* Log activity in its sheet: fields stacked, the button full width at the bottom. */
+  .side-panel .log-form {
+    padding: 0;
+    margin: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .side-panel .log-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .side-panel .log-row .btn {
+    width: 100%;
+  }
+}

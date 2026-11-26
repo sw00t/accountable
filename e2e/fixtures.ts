@@ -1,4 +1,4 @@
-import { test as base, expect, type BrowserContextOptions, type Page } from "@playwright/test";
+import { test as base, expect, type BrowserContextOptions, type Locator, type Page } from "@playwright/test";
 import { API_PORT, TODAY, WEB_PORT } from "../playwright.config";
 
 export const API = `http://127.0.0.1:${API_PORT}/api`;
@@ -132,12 +132,15 @@ export async function expectNoSideScroll(page: Page, { content = false } = {}) {
 
 /** N3: every visible button, link and field inside `scope` is at least 44 by 44 px. */
 export async function expectTapTargets(page: Page, scope = "body") {
+  // Measure once sheets and panels have finished rising into place.
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
   const small = await page.locator(scope).evaluateAll((roots) =>
     roots.flatMap((root) =>
       [...root.querySelectorAll<HTMLElement>("a[href], button, input, select, textarea, [role=tab]")]
         .filter((el) => el.offsetParent !== null || getComputedStyle(el).position === "fixed")
         .map((el) => ({ el, box: el.getBoundingClientRect() }))
-        .filter(({ box }) => box.width > 0 && (box.width < 44 || box.height < 44))
+        // Half a pixel either way is the phone rounding its layout, not a smaller target.
+        .filter(({ box }) => box.width > 0 && (box.width < 43.5 || box.height < 43.5))
         .map(({ el, box }) => `${el.tagName} "${(el.getAttribute("aria-label") ?? el.textContent ?? "").trim()}" ${Math.round(box.width)}x${Math.round(box.height)}`),
     ),
   );
@@ -148,6 +151,32 @@ export async function expectTapTargets(page: Page, scope = "body") {
 export async function turnPhone(page: Page) {
   const size = page.viewportSize()!;
   await page.setViewportSize({ width: size.height, height: size.width });
+}
+
+// --- Typing dates (TE20, TE41) ---
+
+// Keys for 20 Nov 2026 in each way a date field can be laid out. A year-first
+// field takes up to six digits, so the right arrow moves on to the month.
+const LAYOUTS = [["11", "20", "2026"], ["2026", "ArrowRight", "11", "20"], ["20", "11", "2026"]];
+
+export async function typeKeys(page: Page, keys: string[], delay = 0) {
+  for (const key of keys) {
+    if (key === "ArrowRight") await page.keyboard.press(key);
+    else await page.keyboard.type(key, { delay });
+  }
+}
+
+/** Date fields take their layout from the computer's region, so find it first. */
+export async function dateKeys(page: Page, before: Locator, field: Locator): Promise<string[]> {
+  for (const keys of LAYOUTS) {
+    await before.focus();
+    await page.keyboard.press("Tab");
+    await typeKeys(page, keys);
+    const value = await field.inputValue();
+    await field.fill("");
+    if (value === "2026-11-20") return keys;
+  }
+  throw new Error("Couldn't work out how this computer's date fields are typed");
 }
 
 export { expect };

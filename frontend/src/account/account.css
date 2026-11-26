@@ -146,3 +146,34 @@
     background-clip: padding-box;
   }
 }
+
+/* U13: the menu as a sheet on a phone, and the circle at the rail's foot in landscape. */
+@media (max-width: 767px), (orientation: landscape) and (max-height: 499px) {
+  .user-menu-sheet .user-menu-person {
+    padding: 0 4px 12px;
+  }
+  .user-menu-sheet .user-menu-sign-out {
+    min-height: 52px;
+  }
+  /* The sign-in panel fills the width and sits near the top, clear of the phone's keyboard. */
+  .sign-in {
+    min-height: 100dvh;
+    align-items: start;
+    padding: max(16px, 6dvh) 16px 24px;
+  }
+  .sign-in-panel {
+    width: 100%;
+    max-width: 400px;
+    padding: 24px 20px;
+  }
+  /* The top bar's stacking order carries the circle above the rail it sits on. */
+  .app.landscape .topbar {
+    z-index: 32;
+  }
+  .app.landscape .user-menu {
+    position: fixed;
+    left: calc(16px + env(safe-area-inset-left));
+    bottom: 12px;
+    z-index: 31;
+  }
+}

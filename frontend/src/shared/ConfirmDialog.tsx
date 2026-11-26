@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Schemas } from "./api";
 import { plural } from "./format";
+import "./tables-phone.css";
 
 type Props = {
   title: string;

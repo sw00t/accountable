@@ -52,33 +52,34 @@ Three choices keep the parts apart and the laptop unchanged:
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
 | `frontend/src/shared/DataTable.tsx` | T8: on a phone, a `phoneRow` prop gives each row's name, second line and end (status, stage or amount); rows render as a list with a More button (Edit, Delete) in a sheet; a "Sort by" button opens a sheet of the sortable columns, each in either order; paging as "26 to 50 of 412" between Previous and Next. Search, filters, sort and paging are the same TanStack table, so turning the phone keeps them (N5) | [W2.1](#w2-1) | Changed |
+| `frontend/src/shared/TablePhone.tsx` | The table's phone pieces: the list of rows (with a space between a row's two lines, so screen readers hear them apart), the Sort by button and sheet (its words from a column's `sortWords`, or A to Z and lowest first), and the pager. Each list page gives `sortWords` for stage and date columns | [W2.1](#w2-1) | New |
 | `frontend/src/shared/MoreMenu.tsx` | A 44 px More button that opens a sheet of named actions; shared by table rows, record pages and timeline entries (CN26) | [W2.1](#w2-1) | New |
-| `frontend/src/shared/SidePanel.tsx` | On a phone, opens as a full sheet with Cancel and Save at the bottom; the form's own buttons move into that footer through a class, not new markup | [W2.1](#w2-1) | Changed |
-| `frontend/src/shared/ConfirmDialog.tsx` | On a phone, a sheet with the buttons full width, danger on top | [W2.1](#w2-1) | Changed |
+| `frontend/src/shared/SidePanel.tsx` | Focuses the field a form marks `data-autofocus`, else the first, so Log activity starts in What happened (A7). Full screen on a phone with Cancel and Save at the bottom comes from `tables-phone.css` alone | [W2.1](#w2-1) | Changed |
+| `frontend/src/shared/ConfirmDialog.tsx` | Imports `tables-phone.css`, which makes it a sheet on a phone with the buttons full width, danger on top; no markup changes | [W2.1](#w2-1) | Changed |
 | `frontend/src/shared/tables-phone.css` | The list, More, Sort by, paging, form footer and confirm sheet rules | [W2.1](#w2-1) | New |
-| `frontend/src/shared/DataTable.test.tsx`, `SidePanel.test.tsx`, `ConfirmDialog.test.tsx`, `MoreMenu.test.tsx` | TF38, TF39 | [W2.1](#w2-1) | Changed, `MoreMenu.test.tsx` new |
+| `frontend/src/shared/DataTablePhone.test.tsx` | TF38, the More menu included | [W2.1](#w2-1) | New |
 
 <a id="pt4"></a>**PT4 Sections: lists, record pages and the timeline**
 
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
 | `frontend/src/contacts/ContactsPage.tsx`, `deals/DealsPage.tsx`, `organizations/OrganizationsPage.tsx` | Each gives `DataTable` its `phoneRow`: C7, D11 and O5 | [W2.2](#w2-2) | Changed |
-| `frontend/src/shared/RecordHeader.tsx` | A record page's phone header: back, More (Edit, Delete), name, second line, status or stage, and the row of buttons (Log activity, and Call and Email when given) | [W2.2](#w2-2) | New |
-| `frontend/src/contacts/ContactPage.tsx`, `deals/DealPage.tsx`, `organizations/OrganizationPage.tsx` | Use `RecordHeader` on a phone; Call and Email as `tel:` and `mailto:` links on a contact, left out when empty (C7); one column in portrait, two in landscape | [W2.2](#w2-2) | Changed |
+| `frontend/src/shared/RecordHeader.tsx` | A record page's header at both sizes: on a laptop the page header with Delete, as before; on a phone back and More (Edit, Delete) in the top bar, then the name, second line, status or stage, and the row of buttons (Log activity, and Call and Email when given). The page hands it the Log activity form as a function, so `shared` doesn't import from `activities` | [W2.2](#w2-2) | New |
+| `frontend/src/contacts/ContactPage.tsx`, `deals/DealPage.tsx`, `organizations/OrganizationPage.tsx` | Use `RecordHeader` in place of `PageHeader`; Call and Email as `tel:` and `mailto:` links on a contact, left out when empty (C7); one column in portrait, two in landscape | [W2.2](#w2-2) | Changed |
 | `frontend/src/activities/Timeline.tsx` | Each entry's Edit and Delete behind `MoreMenu` on a phone (A7) | [W2.2](#w2-2) | Changed |
 | `frontend/src/activities/LogActivityForm.tsx` | On a phone, opened from the record's Log activity button in a full sheet with Call chosen; saving closes it (A7). On a laptop it stays at the top of the timeline (A3) | [W2.2](#w2-2) | Changed |
 | `frontend/src/shared/records-phone.css` | Record header, action row, one and two columns, timeline rows | [W2.2](#w2-2) | New |
-| `frontend/src/shared/RecordHeader.test.tsx`, and the existing tests of the three record pages, `Timeline.test.tsx` and `LogActivityForm.test.tsx` | TF40, TF41 | [W2.2](#w2-2) | New and changed |
+| `frontend/src/shared/RecordHeader.test.tsx`, `activities/TimelinePhone.test.tsx` | TF40, TF41 | [W2.2](#w2-2) | New |
 
 <a id="pt5"></a>**PT5 Search, the user menu and sign-in**
 
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
-| `frontend/src/search/SearchBox.tsx` | F8: on a phone, a 44 px search button that opens search full screen with the box, Cancel and the results; the box's behaviour, `useSearch` and the keyboard are the same code | [W2.3](#w2-3) | Changed |
+| `frontend/src/search/SearchBox.tsx` | F8: on a phone, a 44 px search button that opens search full screen with the box, Cancel and the results. Split in two: `SearchBox` chooses the button or the field and closes full-screen search on a page change; `SearchField` is the box with `useSearch` and the keyboard, unchanged. Cancel and Escape close it and put focus back on the button (N6). Full-screen search is a history entry of its own (router state), so the back button closes it on the same page, and choosing a result replaces that entry | [W2.3](#w2-3) | Changed |
 | `frontend/src/search/search.css` | Full-screen search rules, inside the phone query | [W2.3](#w2-3) | Changed |
 | `frontend/src/account/UserMenu.tsx` | U13: on a phone the menu opens in a `Sheet` with the same items and keyboard use; in landscape the stylesheet places the circle at the rail's foot | [W2.3](#w2-3) | Changed |
 | `frontend/src/account/account.css` | The menu sheet, the circle at the rail's foot in landscape, and the sign-in panel on a phone | [W2.3](#w2-3) | Changed |
-| `frontend/src/search/SearchBox.test.tsx`, `account/UserMenu.test.tsx`, `account/SignInPage.test.tsx` | TF44, TF45 | [W2.3](#w2-3) | Changed |
+| `frontend/src/search/SearchBoxPhone.test.tsx`, `account/UserMenuPhone.test.tsx` | TF44, TF45 | [W2.3](#w2-3) | New |
 
 <a id="pt6"></a>**PT6 Pipeline**
 
@@ -109,7 +110,7 @@ Three choices keep the parts apart and the laptop unchanged:
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
 | `playwright.config.ts` | Three more projects in the installed Chrome with touch: `phone` (390 by 844), `phone-landscape` (844 by 390) and `phone-narrow` (360 by 780), each running only `e2e/phone/`. The `chrome` project ignores `e2e/phone/`, so the laptop tests run as before | [W1.3](#w1-3) | Changed |
-| `e2e/fixtures.ts` | Helpers: no sideways scroll on the page, every visible button and link at least 44 by 44 px, the tab bar or rail, and turning the phone (resizing the viewport between portrait and landscape) | [W1.3](#w1-3) | Changed |
+| `e2e/fixtures.ts` | Helpers: no sideways scroll on the page, every visible button and link at least 44 by 44 px (measured once animations finish, allowing half a pixel of rounding), and turning the phone (resizing the viewport between portrait and landscape). TE20's date-typing helpers move here from `quick-log.spec.ts` | [W1.3](#w1-3) | Changed |
 | `e2e/phone/layout.spec.ts` | TE38, TE39 | [W1.3](#w1-3), [W4.1](#w4-1) | New |
 | `e2e/phone/tables.spec.ts` | TE40 | [W2.4](#w2-4) | New |
 | `e2e/phone/journeys.spec.ts` | TE41, TE43, TE44 | [W2.4](#w2-4) | New |
@@ -193,7 +194,7 @@ Each test fails before its work item and passes after it. The frontend tests swi
 | <a id="tf36"></a>TF36 | `shared/TabBar.test.tsx` | Five links in order with their labels, the current one marked; the page's title and main action in the top bar; on a laptop the sidebar instead, and a window crossing the phone size swaps one for the other | N4 | None |
 | <a id="tf37"></a>TF37 | `shared/Sheet.test.tsx` | A sheet is a labelled modal dialog; focus moves into it and back to what opened it; Escape, a tap outside and dragging the handle down close it; the page doesn't scroll while it's open | N6, U13 | [R7](#r7) |
 | <a id="tf38"></a>TF38 | `shared/DataTable.test.tsx`, `MoreMenu.test.tsx` | On a phone: rows as a list with name, second line and end; tapping a row opens it; More opens Edit and Delete; Sort by lists the columns in both orders, sorts, and marks the current one; search, filters and paging as on a laptop; switching between phone and laptop keeps the search, sort and page | T1 to T8, N5 | [R8](#r8) |
-| <a id="tf39"></a>TF39 | `shared/SidePanel.test.tsx`, `ConfirmDialog.test.tsx` | On a phone the form opens full screen with Cancel and Save at the bottom and keeps Escape and Enter; the confirm sheet has the same message with the danger button on top | T4, T6 | [R7](#r7) |
+| <a id="tf39"></a>TF39 | `shared/RecordHeader.test.tsx` | A form in a side panel starts in the field it marks (What happened in Log activity). The form and confirm sheets' layout on a phone is CSS alone, so TE40 checks it in the browser: the form full width, every control 44 px, the confirm sheet's buttons | T4, T6, A7 | [R7](#r7) |
 | <a id="tf40"></a>TF40 | `shared/RecordHeader.test.tsx`, the record pages' tests | Back, More with Edit and Delete, the name, second line and status; a contact's Call and Email are `tel:` and `mailto:` links, each left out when empty; on a laptop the pages are as before | C4, C7, D9, O3, N2 | None |
 | <a id="tf41"></a>TF41 | `activities/LogActivityForm.test.tsx`, `Timeline.test.tsx` | On a phone, Log activity opens the form in a sheet with Call chosen and the description focused, saves with the keyboard alone, and closes; each entry's Edit and Delete are behind More | A3, A4, A7 | [R6](#r6) |
 | <a id="tf42"></a>TF42 | `pipeline/board.test.ts` | `moveToStage` puts the card at the top of the new stage; `moveWithin` moves it one visible place up or down, past hidden cards as P4's drop does, and gives nothing at the first or last place; both give the same `Move` a drop to that place gives | P4, P10 | [R3](#r3) |
@@ -211,7 +212,7 @@ Each runs in the `phone`, `phone-landscape` and `phone-narrow` projects unless i
 | <a id="te38"></a>TE38 | `layout.spec.ts` | Every page, every open sheet and form, and the sign-in screen: no sideways scroll on the page, and the phone not zoomed out to fit something too wide (measured against the phone's own width, since a phone's browser widens its layout to fit wide content), every visible button and link at least 44 by 44 px, fields at 16 px, in light and in Dark. PH1 checks the shell on the dashboard, the pipeline and the three record pages; the three lists join in PH2, since Chrome on a phone widens the layout to fit the laptop's table even inside a clipped panel | N1, N3, N7, SC2 | [R4](#r4), [R13](#r13) |
 | <a id="te39"></a>TE39 | `layout.spec.ts` | The tab bar in portrait and the rail in landscape reach every section, with the current one marked; in Dark the page is `#000000` and panels `#0B1A1F`, and a first visit opens in it; a 1440 px window in the same test run shows the sidebar and the laptop's dark page `#04232E` | N4, M6, SC3, SC6 | [R1](#r1) |
 | <a id="te40"></a>TE40 | `tables.spec.ts` | Contacts on a phone: search, the status filter, Sort by in both orders, the page controls, More then Edit saves a change, More then Delete asks in a sheet and deletes; the same list for deals and organizations | T1 to T8, C7, D11, O5 | None |
-| <a id="te41"></a>TE41 | `journeys.spec.ts` | From the dashboard, search for a contact, open them, Log activity, type a call and a follow-up date, save: done in under 30 seconds at human typing speed, and the follow-up shows on the dashboard (`phone` only) | A7, F8, SC5 | [R6](#r6) |
+| <a id="te41"></a>TE41 | `journeys.spec.ts` | From the dashboard, search for a contact, open them, Log activity, type a call and set a follow-up date, save: done in under 30 seconds at human typing speed, and the entry shows on the dashboard (`phone` only). Chrome's phone emulation shows no date picker and takes no typed dates, so the date is set directly; picking it by hand is part of TM20 | A7, F8, SC5 | [R6](#r6) |
 | <a id="te42"></a>TE42 | `pipeline.spec.ts` | Choose Negotiation from the tabs, Move a deal to Won: the totals change at once and the message says so; Move a card up and down; reload and the stage, the move and the order are kept | P9 to P11 | [R3](#r3), [R10](#r10), [R11](#r11) |
 | <a id="te43"></a>TE43 | `journeys.spec.ts` | Half fill a contact form in portrait, turn the phone, and what was typed is still there; a contacts list scrolled and sorted keeps its sort and page after turning (`phone` only, turning to landscape and back) | N5 | [R8](#r8) |
 | <a id="te44"></a>TE44 | `journeys.spec.ts` | The user menu's sheet: choose Light, close by tapping outside, reopen, sign out; the sign-in screen fits the phone and signing in returns to the page (`phone` only) | U13, M1, U4 | [R7](#r7) |

@@ -43,6 +43,7 @@ const COLUMNS: TableColumn<DealRow>[] = [
     id: "stage",
     accessorFn: (d) => STAGE_ORDER[d.stage],
     header: "Stage",
+    meta: { sortWords: ["New to Lost", "Lost to New"] },
     cell: ({ row }) => <StagePill stage={row.original.stage} />,
   },
   {
@@ -66,7 +67,7 @@ const COLUMNS: TableColumn<DealRow>[] = [
   {
     accessorKey: "close_date",
     header: "Close date",
-    meta: { numeric: true },
+    meta: { numeric: true, sortWords: ["earliest first", "latest first"] },
     cell: ({ getValue }) => formatDate(getValue<string | null>()),
   },
 ];
@@ -155,6 +156,12 @@ export function DealsPage() {
           addLabel="Add deal"
           filters={filter}
           emptyMessage={stage ? `No deals at this stage yet.` : undefined}
+          phoneRow={(d) => ({
+            name: d.name,
+            badge: <LateBadge late={d.is_late} />,
+            detail: [d.organization_name, stageLabel(d.stage)].filter(Boolean).join(" · "),
+            end: <span className="mono">{money(d.value)}</span>,
+          })}
         />
       )}
       <SidePanel

@@ -82,17 +82,6 @@
   .add-noun {
     display: none;
   }
-  .topbar .top-search {
-    width: auto;
-    flex: 0 1 150px;
-    min-width: 0;
-  }
-  .topbar .top-search-results {
-    position: fixed;
-    left: 16px;
-    right: 16px;
-    width: auto;
-  }
 
   /*
    * Content that's too wide scrolls inside the page rather than making the phone zoom out,

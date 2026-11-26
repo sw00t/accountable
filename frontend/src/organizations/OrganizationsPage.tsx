@@ -94,6 +94,11 @@ export function OrganizationsPage() {
           onDelete={(o) => setDeleting({ kind: "organization", id: o.id, name: o.name })}
           onAdd={() => setEditing("new")}
           addLabel="Add organization"
+          phoneRow={(o) => ({
+            name: o.name,
+            detail: o.industry,
+            end: <span className="mono">{money(o.open_value)}</span>,
+          })}
         />
       )}
       <SidePanel

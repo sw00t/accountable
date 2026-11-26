@@ -1,29 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
-import { test, expect } from "./fixtures";
-
-// Keys for 20 Nov 2026 in each way a date field can be laid out. A year-first
-// field takes up to six digits, so the right arrow moves on to the month.
-const LAYOUTS = [["11", "20", "2026"], ["2026", "ArrowRight", "11", "20"], ["20", "11", "2026"]];
-
-async function typeKeys(page: Page, keys: string[], delay = 0) {
-  for (const key of keys) {
-    if (key === "ArrowRight") await page.keyboard.press(key);
-    else await page.keyboard.type(key, { delay });
-  }
-}
-
-/** Date fields take their layout from the computer's region, so find it first. */
-async function dateKeys(page: Page, before: Locator, field: Locator): Promise<string[]> {
-  for (const keys of LAYOUTS) {
-    await before.focus();
-    await page.keyboard.press("Tab");
-    await typeKeys(page, keys);
-    const value = await field.inputValue();
-    await field.fill("");
-    if (value === "2026-11-20") return keys;
-  }
-  throw new Error("Couldn't work out how this computer's date fields are typed");
-}
+import { test, expect, dateKeys, typeKeys } from "./fixtures";
 
 test("TE20 logging a call with a follow-up by keyboard at human typing speed takes under 30 seconds", async ({ page }) => {
   await page.goto("/contacts");

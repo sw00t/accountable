@@ -185,6 +185,7 @@ export function LogActivityForm({ on, entry, onSaved, onCancel }: Props) {
           <input
             {...fieldProps(`${prefix}-description`, errorOf("description"))}
             {...register("description")}
+            data-autofocus={editing ? undefined : true}
             placeholder={editing ? undefined : "For example: agreed pricing for 3 sites"}
             autoComplete="off"
           />

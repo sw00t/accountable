@@ -11,6 +11,7 @@ import {
   type FilterFn,
   type SortingFn,
   type SortingState,
+  type Table,
 } from "@tanstack/react-table";
 import {
   ArrowDown,
@@ -23,10 +24,17 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { usePhone } from "./phone";
+import { PhoneList, PhonePager, SortBy, type PhoneRow } from "./TablePhone";
+import "./tables-phone.css";
+
 export const PAGE_SIZE = 25;
 
-/** How a column lays out: numbers right-aligned, and an optional fixed width. */
-type ColumnLayout = { numeric?: boolean; width?: string };
+/**
+ * How a column lays out: numbers right-aligned, and an optional fixed width. On a phone,
+ * Sort by names its two orders with `sortWords`, such as ["earliest first", "latest first"].
+ */
+type ColumnLayout = { numeric?: boolean; width?: string; sortWords?: [string, string] };
 
 /** A table column, with its layout in `meta`. */
 export type TableColumn<T> = ColumnDef<T, unknown> & { meta?: ColumnLayout };
@@ -49,6 +57,8 @@ type Props<T> = {
   filters?: ReactNode;
   /** Shown instead of "No contacts yet." when a filter is on. */
   emptyMessage?: string;
+  /** What a row shows on a phone, where the table becomes a list (T8). */
+  phoneRow?: (row: T) => PhoneRow;
 };
 
 /**
@@ -95,7 +105,9 @@ export function DataTable<T>({
   initialSort = [],
   filters,
   emptyMessage,
+  phoneRow,
 }: Props<T>) {
+  const phone = usePhone() && phoneRow !== undefined;
   const [sorting, setSorting] = useState<SortingState>(initialSort);
   // TanStack keeps the first sorting function it's given, so it reads the current
   // direction through a ref rather than a stale copy.
@@ -170,7 +182,7 @@ export function DataTable<T>({
   }, [data.length, emptyMessage, noun, onAdd, addLabel, query]);
 
   return (
-    <div className="panel table-panel">
+    <div className={phone ? "panel table-panel phone" : "panel table-panel"}>
       <div className="table-toolbar">
         <label className="search-box">
           <Search size={16} aria-hidden="true" />
@@ -182,11 +194,20 @@ export function DataTable<T>({
             onChange={(e) => onSearch(e.target.value)}
           />
         </label>
+        {phone && <SortBy table={table} />}
         {filters}
       </div>
 
       {rows.length === 0 ? (
         empty
+      ) : phone ? (
+        <PhoneList
+          rows={rows}
+          phoneRow={phoneRow!}
+          onOpen={onOpen}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       ) : (
         <table className="data-table">
           <thead>
@@ -262,7 +283,15 @@ export function DataTable<T>({
         </table>
       )}
 
-      {filteredCount > 0 && (
+      {filteredCount > 0 && phone && (
+        <PhonePager
+          first={first}
+          last={last}
+          total={filteredCount}
+          table={table as Table<unknown>}
+        />
+      )}
+      {filteredCount > 0 && !phone && (
         <div className="table-foot">
           <span className="muted">
             Showing {first} to {last} of {filteredCount}

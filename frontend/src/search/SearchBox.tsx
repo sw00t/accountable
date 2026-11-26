@@ -1,8 +1,9 @@
-import { useId, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Building2, DollarSign, Search, User, type LucideIcon } from "lucide-react";
 import { failureMessage } from "../shared/api";
 import { plural } from "../shared/format";
+import { usePhone } from "../shared/phone";
 import { stageLabel } from "../shared/stages";
 import { locate } from "./highlight";
 import { useSearch, type Found, type SearchResults } from "./useSearch";
@@ -85,19 +86,63 @@ function Highlighted({ name, text }: { name: string; text: string }) {
   );
 }
 
-/** The search box in the top bar (F1 to F7), an ARIA combobox with a grouped listbox. */
+/**
+ * The search box in the top bar (F1 to F7). On a phone it's a button that opens the same
+ * search full screen (F8).
+ */
 export function SearchBox() {
+  const phone = usePhone();
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Full-screen search is a history entry of its own, so Back closes it and stays on the page.
+  const fullScreen =
+    phone && (location.state as { searching?: boolean } | null)?.searching === true;
+  // After full-screen search closes, focus goes back to the button that opened it (N6).
+  const refocus = useRef(false);
+  if (phone && !fullScreen) {
+    return (
+      <button
+        ref={(button) => {
+          if (button && refocus.current) button.focus();
+          refocus.current = false;
+        }}
+        type="button"
+        className="icon-btn search-button"
+        aria-label="Search"
+        onClick={() =>
+          navigate(
+            { pathname: location.pathname, search: location.search },
+            { state: { searching: true } },
+          )
+        }
+      >
+        <Search size={20} aria-hidden="true" />
+      </button>
+    );
+  }
+  const close = () => {
+    refocus.current = true;
+    navigate(-1);
+  };
+  return <SearchField fullScreen={fullScreen} onClose={close} />;
+}
+
+type FieldProps = { fullScreen: boolean; onClose: () => void };
+
+/** The box and its results: an ARIA combobox with a grouped listbox. */
+function SearchField({ fullScreen, onClose }: FieldProps) {
   const ids = useId();
   const navigate = useNavigate();
+  const input = useRef<HTMLInputElement>(null);
   const [text, setText] = useState("");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(fullScreen);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const { pathname } = useLocation();
   const [page, setPage] = useState(pathname);
   if (pathname !== page) {
     // A new page starts with an empty box, however the person got there.
     setPage(pathname);
-    clear();
+    reset();
   }
   const { found, error } = useSearch(text);
 
@@ -108,15 +153,26 @@ export function SearchBox() {
   const showing = open && (found !== null || error !== null);
   const expanded = showing && results.length > 0;
 
-  function clear() {
+  function reset() {
     setText("");
     setOpen(false);
     setActiveKey(null);
   }
 
+  function clear() {
+    reset();
+    onClose();
+  }
+
+  // Full-screen search starts with the keyboard up, in the box (F8).
+  useEffect(() => {
+    if (fullScreen) input.current?.focus();
+  }, [fullScreen]);
+
   function choose(result: Result) {
-    clear();
-    navigate(result.path);
+    reset();
+    // Full-screen search's own history entry gives way to the record, so Back skips it.
+    navigate(result.path, { replace: fullScreen });
   }
 
   function step(by: 1 | -1) {
@@ -133,7 +189,7 @@ export function SearchBox() {
       ArrowDown: () => step(1),
       ArrowUp: () => step(-1),
       Enter: () => expanded && active && choose(active),
-      Escape: () => setOpen(false),
+      Escape: () => (fullScreen ? clear() : setOpen(false)),
     };
     const handle = keys[event.key];
     if (!handle) return;
@@ -142,11 +198,12 @@ export function SearchBox() {
   }
 
   return (
-    <div className="top-search" role="search">
+    <div className={fullScreen ? "top-search full" : "top-search"} role="search">
       <label className="top-search-field">
         <Search size={16} aria-hidden="true" />
         <span className="sr-only">Search</span>
         <input
+          ref={input}
           type="text"
           role="combobox"
           placeholder={PLACEHOLDER}
@@ -163,9 +220,14 @@ export function SearchBox() {
           }}
           onKeyDown={onKeyDown}
           onFocus={() => setOpen(true)}
-          onBlur={() => setOpen(false)}
+          onBlur={() => !fullScreen && setOpen(false)}
         />
       </label>
+      {fullScreen && (
+        <button type="button" className="btn ghost search-cancel" onClick={clear}>
+          Cancel
+        </button>
+      )}
       {showing && (
         <div className="top-search-results">
           {found ? (

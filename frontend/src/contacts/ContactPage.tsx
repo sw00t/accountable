@@ -1,13 +1,14 @@
 import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
+import { LogActivityForm } from "../activities/LogActivityForm";
 import { Timeline } from "../activities/Timeline";
 import { Authorship } from "../shared/Authorship";
 import { DeleteRecord, type Deletable } from "../shared/DeleteRecord";
 import { formatDate, money } from "../shared/format";
 import { LateBadge } from "../shared/LateBadge";
 import { LoadError, Loading } from "../shared/Loading";
-import { PageHeader } from "../shared/PageHeader";
+import { RecordHeader } from "../shared/RecordHeader";
 import { RecordLink } from "../shared/RecordLink";
 import { SidePanel } from "../shared/SidePanel";
 import { DealForm } from "../deals/DealForm";
@@ -29,30 +30,25 @@ export function ContactPage() {
   if (query.isPending) return <Loading />;
   if (query.isError) return <LoadError error={query.error} what="contact" />;
   const contact = query.data;
+  const summary =
+    [contact.job_title, contact.organization?.name].filter(Boolean).join(" at ") || "Contact";
+  const remove = () => setDeleting({ kind: "contact", id: contact.id, name: contact.name });
 
   return (
     <>
-      <PageHeader
-        title={contact.name}
-        summary={
-          [contact.job_title, contact.organization?.name].filter(Boolean).join(" at ") || "Contact"
-        }
-        action={
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() =>
-              setDeleting({
-                kind: "contact",
-                id: contact.id,
-                name: contact.name,
-              })
-            }
-          >
-            <Trash2 size={16} aria-hidden="true" />
-            Delete contact
-          </button>
-        }
+      <RecordHeader
+        name={contact.name}
+        noun="contact"
+        detail={summary}
+        status={<StatusBadge status={contact.status} />}
+        back="/contacts"
+        onEdit={() => setPanel("edit")}
+        onDelete={remove}
+        log={(done) => (
+          <LogActivityForm on={{ contactId: contact.id }} onSaved={done} onCancel={done} />
+        )}
+        call={contact.phone}
+        email={contact.email}
       />
       <div className="record">
         <div className="record-side">

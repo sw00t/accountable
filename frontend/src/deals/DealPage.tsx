@@ -1,13 +1,14 @@
 import { useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil } from "lucide-react";
+import { LogActivityForm } from "../activities/LogActivityForm";
 import { Timeline } from "../activities/Timeline";
 import { Authorship } from "../shared/Authorship";
 import { DeleteRecord, type Deletable } from "../shared/DeleteRecord";
 import { formatDate, money } from "../shared/format";
 import { LateBadge } from "../shared/LateBadge";
 import { LoadError, Loading } from "../shared/Loading";
-import { PageHeader } from "../shared/PageHeader";
+import { RecordHeader } from "../shared/RecordHeader";
 import { RecordLink } from "../shared/RecordLink";
 import { SidePanel } from "../shared/SidePanel";
 import { stageInfo } from "../shared/stages";
@@ -29,27 +30,26 @@ export function DealPage() {
   if (query.isError) return <LoadError error={query.error} what="deal" />;
   const deal = query.data;
   const closed = !stageInfo(deal.stage).open;
+  const remove = () => setDeleting({ kind: "deal", id: deal.id, name: deal.name });
+  const stageLine = (
+    <span className="name-cell">
+      <StagePill stage={deal.stage} /> · <span className="mono">{money(deal.value)}</span>
+      <LateBadge late={deal.is_late} />
+    </span>
+  );
 
   return (
     <>
-      <PageHeader
-        title={deal.name}
-        summary={
-          <span className="name-cell">
-            <StagePill stage={deal.stage} /> · <span className="mono">{money(deal.value)}</span>
-            <LateBadge late={deal.is_late} />
-          </span>
-        }
-        action={
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() => setDeleting({ kind: "deal", id: deal.id, name: deal.name })}
-          >
-            <Trash2 size={16} aria-hidden="true" />
-            Delete deal
-          </button>
-        }
+      <RecordHeader
+        name={deal.name}
+        noun="deal"
+        detail={deal.organization_name}
+        summary={stageLine}
+        status={stageLine}
+        back="/deals"
+        onEdit={() => setEditing(true)}
+        onDelete={remove}
+        log={(done) => <LogActivityForm on={{ dealId: deal.id }} onSaved={done} onCancel={done} />}
       />
       <div className="record">
         <section className="panel" aria-label="Details">

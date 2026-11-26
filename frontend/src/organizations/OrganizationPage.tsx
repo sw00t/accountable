@@ -1,12 +1,12 @@
 import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { Authorship } from "../shared/Authorship";
 import { DeleteRecord, type Deletable } from "../shared/DeleteRecord";
 import { formatDate, money, plural } from "../shared/format";
 import { LateBadge } from "../shared/LateBadge";
 import { LoadError, Loading } from "../shared/Loading";
-import { PageHeader } from "../shared/PageHeader";
+import { RecordHeader } from "../shared/RecordHeader";
 import { SidePanel } from "../shared/SidePanel";
 import { ContactForm } from "../contacts/ContactForm";
 import { StatusBadge } from "../contacts/StatusBadge";
@@ -31,22 +31,18 @@ export function OrganizationPage() {
   if (query.isError) return <LoadError error={query.error} what="organization" />;
   const org = query.data;
   const openDeals = org.deals.filter((d) => d.stage !== "won" && d.stage !== "lost");
+  const summary = `${org.industry ?? "Organization"} · ${plural(org.contacts.length, "contact")} · ${plural(openDeals.length, "open deal")}`;
+  const remove = () => setDeleting({ kind: "organization", id: org.id, name: org.name });
 
   return (
     <>
-      <PageHeader
-        title={org.name}
-        summary={`${org.industry ?? "Organization"} · ${plural(org.contacts.length, "contact")} · ${plural(openDeals.length, "open deal")}`}
-        action={
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={() => setDeleting({ kind: "organization", id: org.id, name: org.name })}
-          >
-            <Trash2 size={16} aria-hidden="true" />
-            Delete organization
-          </button>
-        }
+      <RecordHeader
+        name={org.name}
+        noun="organization"
+        detail={summary}
+        back="/organizations"
+        onEdit={() => setPanel("edit")}
+        onDelete={remove}
       />
       <div className="record">
         <section className="panel" aria-label="Details">
