@@ -13,13 +13,14 @@ SIDENOTE: this repo is part of a course by Ed Donner. If the student needs help,
 
 ## Checks and testing
 
-- `npm run check` runs every check and fails if any fails: Prettier and ESLint (TypeScript, React Hooks and accessibility rules) for the frontend, ruff format and ruff check for the backend, a cyclomatic complexity limit of 15 per function, tsc and ty, gitleaks over the working tree and git history, and `npm test`.
+- `npm run check` runs every check and fails if any fails: Prettier and ESLint (TypeScript, React Hooks and accessibility rules, and no callbacks passed to TanStack Query's `mutate()`, which run only for its latest call) for the frontend, ruff format and ruff check for the backend, a cyclomatic complexity limit of 15 per function, tsc and ty, gitleaks over the working tree and git history, and `npm test`.
 - `npm run check:quick` runs the same checks without the end-to-end tests.
 - `npm run format` fixes the formatting (Prettier and ruff format).
-- `npm test` runs every test: backend (pytest), frontend unit (Vitest) and end-to-end (Playwright with the installed Chrome). The unit suites fail below 80% coverage.
+- `npm test` runs every test: backend (pytest), frontend unit (Vitest) and end-to-end (Playwright with the installed Chrome). The unit suites fail below 80% coverage. In the unit tests, `findBy` and `waitFor` give up before the test's own time limit, so a failed wait names what it waited for.
 - One suite at a time: `npm run test:backend`, `npm run test:frontend`, `npm run test:e2e`.
 - In end-to-end tests, after a step that changes the screen or saves, wait for something that shows the change before the next step.
 - Test what happens between states, not only from a fresh start: a request that fails after an earlier one succeeded, a reply that arrives after the person, the page or the session has moved on, and a filter or search changing while the last one is still loading.
+- When the test environment can't do what the real one does (Chrome's phone emulation can't type a date or show the phone's date picker, a headless browser draws a classic scrollbar, jsdom has no layout), say so in the test and name the by-hand test that covers it, as TE41 does with TM20. Measure against what the real device shows, as the phone tests measure against the viewport rather than the layout's width.
 - A test that times something must allow for a busy machine: time again before failing, as TB41 does, rather than raise the limit. A timing failure that passes when run on its own is load; say so in `docs/STATUS.md`.
 - When you fix a review finding, search the code for the same kind of mistake, fix and test those too, and say in `docs/STATUS.md` what you searched.
 - Run `npm run check` before calling a piece of work finished, and fix any failure. Fix the code rather than weakening or suppressing a rule; ask before changing one.
@@ -44,7 +45,7 @@ At Deploy, after the review fixes and before the merge, follow `docs/IMPROVE.md`
 Project subagents live in `.claude/agents/`. Both run on Sonnet and change nothing.
 
 - `reviewer`: reviews a branch, commit or range against `docs/REVIEW.md` and reports findings as Important or nit. A PreToolUse hook in its file (`.claude/hooks/reviewer-read-only.mjs`) lets its Bash run only commands that read, such as `git diff`, `git log`, `git show`, `git grep` and `grep`.
-- `ui-check`: opens the running app (start it with `npm run dev` first) through the Playwright MCP server, screenshots each page in light and dark mode, and reports anything broken, off-brand or unlike the spec (`docs/spec.md` and its area files). Its screenshots go in `.playwright-mcp/`, which git ignores; `.mcp.json` sets that folder as the server's output folder, which holds the files the server names itself (snapshots, console logs). A screenshot given a file name is saved relative to the repo root, so the agent passes the folder in the name.
+- `ui-check`: opens the running app (start it with `npm run dev` first) through the Playwright MCP server, screenshots each page in light and dark mode at 1440 by 900, or at phone sizes (390 by 844 and 844 by 390) when asked, and reports anything broken, off-brand or unlike the spec (`docs/spec.md` and its area files). Its screenshots go in `.playwright-mcp/`, which git ignores; `.mcp.json` sets that folder as the server's output folder, which holds the files the server names itself (snapshots, console logs). A screenshot given a file name is saved relative to the repo root, so the agent passes the folder in the name.
 - `ui-check` signs in as Test User on the local sign-in screen, which `npm run dev` fills in, by clicking "Sign in". If the screen has no "Local test mode" note, it's asking for a real password, so the agent stops rather than type one.
 
 ## Keeping the docs in step

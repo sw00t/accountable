@@ -465,6 +465,29 @@ Watch list (seen once; a second time calls for a fix in the harness):
 - A test that hangs rather than fails: TB47's lock test (independent review).
 - A comment stating behaviour no test checked: TE36's note that signing out left the shared session valid (independent review).
 
+### After phone view (25 Nov)
+
+Followed `docs/IMPROVE.md` on `phone-view` before the merge. Looked at the phone-view review, the three ui-check runs, what the product owner chose, and what the checks caught, against the earlier reviews and the watch list above.
+
+- **Repeated, now a check: work that overlaps another left untested.** The third change in a row with a "between states" bug: two cards saving at once left one stuck, and two Mark dones at once lost the first one's error. Both came from callbacks passed to TanStack Query's `mutate()`, which run only for the latest call. The rule in `AGENTS.md` didn't stop it, but this form has a fixed shape, so ESLint now refuses it (`no-restricted-syntax` in `frontend/eslint.config.js`), with a message saying what to use instead. It flagged the timeline's two calls too, which couldn't overlap but now use `mutateAsync` like the rest.
+- **Repeated, now a setting: a test that fails without saying why.** On the watch list from TB47, which hung; here a new test died with "Test timed out" because Testing Library's waits and Vitest's limit were both one second. `findBy` and `waitFor` now give up at 0.8 seconds locally (8 on CI), so the failure names what it waited for (`frontend/src/test-setup.ts`). The full unit suite passed twice with it.
+- **Repeated, now a rule: a test environment unlike the real one.** On the watch list from dark mode (Node hiding jsdom's `localStorage`); here Chrome's phone emulation took no typed dates, widened the layout to fit a wide table, and a headless browser's scrollbar made ui-check misread widths. `AGENTS.md` now says to name the by-hand test that covers what the environment can't do, and to measure against what the real device shows.
+- **The rule to search for the same kind of mistake worked:** searching after each review finding found three more (the dashboard's Mark done, `SidePanel` and `ConfirmDialog`, and `RecordHeader`'s `closeLog`), each now fixed with a test.
+- **Out of date:** `AGENTS.md` described ui-check at 1440 by 900 only; it now gives the phone sizes too.
+- **Still suggested for `docs/STANDARDS.md`,** for the third round: find elements in end-to-end tests by role, label or text, not by class names. This change added more (`.phone-row-name`, `.card .t`, Recharts' `svg text`), since the lists' names and the chart's axis have no role of their own. Not changed: that file is the product owner's.
+- **Tests:** `npm run check` passes in full: backend 512, frontend 700 unit tests in 49 files, end-to-end 98.
+
+Watch list (seen once; a second time calls for a fix in the harness):
+
+- A local stand-in differing from the service it stands in for (multi-user independent review).
+- A copy of state that can drift from its source (multi-user independent review).
+- Error handling that assumes one cause (multi-user independent review).
+- A comment stating behaviour no test checked (multi-user independent review).
+- An effect that re-runs whenever a parent passes a new callback: `Sheet`, `SidePanel` and `ConfirmDialog` pulled focus back on a re-render (phone-view review).
+- Screens checked against the spec only at the end: the landscape filters in the top bar and the menu sheet's circle and theme control were missed in PH2 and found by ui-check in PH4. A second time calls for ui-check on each Build phase's screens.
+- A spec that conflicts with its own rules: 40 px stage tabs against N3's 44 px, and F1's placeholder too long for F8's phone screen.
+- A fix called done without looking at the screen it was for: the Add deal form's date field (PH4), confirmed fixed only at Test.
+
 ## Subagents (23 Nov)
 
 - `.claude/agents/reviewer.md`: reviews the changes on a branch (or a named commit or range) against `docs/REVIEW.md` and reports Important findings, at most five nits, and open questions. Tools: Read, Grep, Glob and Bash. Model: Sonnet. Its PreToolUse hook, `.claude/hooks/reviewer-read-only.mjs`, splits each Bash command at unquoted `;`, `&&`, `||`, `|` and `&`, and blocks it unless every part is a read-only command (git diff, log, show, grep, status, blame and similar; grep, cat, head, ls, find and similar). It also blocks writing to a file, command substitution, `find -delete` or `-exec`, `git branch` with anything but listing options, and environment-variable prefixes. Tried on 15 commands that read (all allowed) and 15 that write or run things (all blocked).

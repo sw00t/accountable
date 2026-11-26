@@ -34,13 +34,13 @@ export function Timeline({ kind, id }: Props) {
 
   const confirmDelete = () => {
     if (!deleting) return;
-    remove.mutate(deleting.id, {
-      onSuccess: () => {
+    remove
+      .mutateAsync(deleting.id)
+      .then(() => {
         toast.success("Activity deleted.");
         setDeleting(null);
-      },
-      onError: (error) => toast.error(failureMessage("delete the activity", error)),
-    });
+      })
+      .catch((error: unknown) => toast.error(failureMessage("delete the activity", error)));
   };
 
   return (
@@ -87,11 +87,12 @@ export function Timeline({ kind, id }: Props) {
                         className="mini"
                         disabled={markDone.isPending}
                         onClick={() =>
-                          markDone.mutate(entry.id, {
-                            onSuccess: () => toast.success("Follow-up marked done."),
-                            onError: (error) =>
+                          markDone
+                            .mutateAsync(entry.id)
+                            .then(() => toast.success("Follow-up marked done."))
+                            .catch((error: unknown) =>
                               toast.error(failureMessage("mark the follow-up done", error)),
-                          })
+                            )
                         }
                       >
                         <Check size={13} aria-hidden="true" />

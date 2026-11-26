@@ -14,7 +14,19 @@ export default tseslint.config(
   jsxA11y.flatConfigs.recommended,
   {
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
-    rules: { complexity: ["error", 15] },
+    rules: {
+      complexity: ["error", 15],
+      // TanStack Query runs callbacks passed to mutate() only for the latest call, so when two
+      // overlap the earlier one's success or error is lost (phone-view review).
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='mutate'][arguments.length>1]",
+          message:
+            "mutate()'s per-call callbacks run only for the latest call. Use mutateAsync(...) with then, catch and finally for each call, or put the callbacks in useMutation.",
+        },
+      ],
+    },
   },
   prettier,
 );
