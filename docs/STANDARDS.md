@@ -8,3 +8,4 @@ Follow these coding guidelines:
 - Ensure text and code are only what is necessary, do not add in low value descriptions or filler words. 
 - Clean abstractions with clear separation of concerns, but don't abstract before it's needed.
 - Avoid brittle tests that are tied to implementation specifics.
+- For end-to-end tests, find elements by role, label, or text rather than class names.
