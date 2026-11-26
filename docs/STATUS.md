@@ -705,6 +705,11 @@ The reviewer subagent read `main...phone-view` against `docs/REVIEW.md`: two Imp
 - **The same kind of mistake, searched for (AGENTS.md):** every other `mutate(…, { callbacks })`: the dashboard's Mark done could run on two follow-ups at once, so an earlier one's error was lost; it now has a promise per follow-up and its own saving state, with a test of two at once, the first failing. The timeline's Mark done disables every button while one saves, and its Delete waits in a modal dialog, so neither can overlap. Every effect that depends on a callback prop: `SidePanel` and `ConfirmDialog` had the same focus problem, and `RecordHeader`'s new `closeLog` was a new function each render, so on a phone a refetch while logging a call pulled focus back to "What happened". Both now keep the callback in a ref, `closeLog` is stable, and each has a re-render test that failed before.
 - **Tests:** `npm run check` passes in full: backend 512, frontend 700 unit tests in 49 files, end-to-end 98.
 
+### Deploy: done (25 Nov)
+
+- **Merged and live:** `phone-view` passed CI on the branch, was merged into `main` (`88fb315`) and pushed; CI passed on `main`. Render was still deploying from the `multi-user` branch it was first set up on, so `main`'s pushes hadn't reached it (the harness round after multi-user hadn't either). The product owner switched the service's branch to `main` in Render's dashboard; from now on each push to `main` deploys once CI passes. The live app at https://accountable-q9l3.onrender.com serves the phone build ("Move to", the stage tabs and "Search everything" are in its code) and `/api/health` answers 200.
+- **TM20, signed off:** the product owner used the live app on a real phone in portrait and landscape, light and Dark: every section, a search, a record, Log activity with a follow-up picked with the phone's own date picker, a form, a delete, the pipeline's Move to, the menu and sign out. Signed off how it works and how it looks (SC7). Every success criterion in `intent.md` is now met.
+
 ## Ideas for later
 
 - **Laptop tidying found by ui-check (TM22):** the inline Log activity field is too narrow for its placeholder; a long email on a contact's details breaks mid-word; contact table rows wrap unevenly at 1440 wide.
