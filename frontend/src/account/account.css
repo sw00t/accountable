@@ -136,3 +136,13 @@
 .user-menu-sign-out:focus-visible {
   background: var(--hover);
 }
+
+/* U13: on a phone the circle keeps its 32 px look with a 44 px space to tap (N3). */
+@media (max-width: 767px), (orientation: landscape) and (max-height: 499px) {
+  .user-menu-circle {
+    width: 44px;
+    height: 44px;
+    border: 6px solid transparent;
+    background-clip: padding-box;
+  }
+}

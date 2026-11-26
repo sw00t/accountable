@@ -9,6 +9,8 @@
   --ink-muted: #5b7a84;
   --line: #e3eaec;
   --hover: #f5f8f9;
+  /* Something raised inside a panel on a phone: a chosen option, a secondary button. */
+  --raised: #eef3f4;
 
   --sea-green: #06d6a0;
   --marigold: #ffc145;
@@ -78,6 +80,7 @@
   --line: #1b3a44;
   /* Darker than the page, so text on them keeps at least its contrast on the page. */
   --hover: #031c24;
+  --raised: #12252c;
   --table-head: #020f14;
   --field: #000000;
   --field-border: #2e4c56;
@@ -112,4 +115,28 @@
   --shadow-lifted: 0 12px 32px rgba(0, 0, 0, 0.7);
   --shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.6);
   --shadow-panel: -8px 0 32px rgba(0, 0, 0, 0.6);
+}
+
+/*
+ * AMOLED dark (spec M6, Concern 25): on a phone in Dark, the page is true black and panels
+ * a near-black Midnight, since black panels would vanish into a black page. The query is
+ * PHONE_QUERY in shared/phone.ts.
+ */
+@media (max-width: 767px), (orientation: landscape) and (max-height: 499px) {
+  :root[data-theme="dark"] {
+    --page: #000000;
+    --panel: #0b1a1f;
+    --raised: #12252c;
+    --hover: #12252c;
+    --table-head: #0b1a1f;
+    --field: #0b1a1f;
+    --line: #1d3138;
+    --scrim: rgba(0, 0, 0, 0.6);
+
+    /* Shadows don't show on black. */
+    --shadow: none;
+    --shadow-lifted: none;
+    --shadow-hover: none;
+    --shadow-panel: none;
+  }
 }

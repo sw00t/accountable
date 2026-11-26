@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
 import { DataTable, type TableColumn } from "../shared/DataTable";
 import { DeleteRecord, type Deletable } from "../shared/DeleteRecord";
 import { money, plural } from "../shared/format";
 import { LoadError, Loading } from "../shared/Loading";
+import { AddButton } from "../shared/AddButton";
 import { PageHeader } from "../shared/PageHeader";
 import { SidePanel } from "../shared/SidePanel";
 import { OrganizationForm } from "./OrganizationForm";
@@ -76,12 +76,7 @@ export function OrganizationsPage() {
       <PageHeader
         title="Organizations"
         summary={query.data ? plural(query.data.total, "organization") : " "}
-        action={
-          <button type="button" className="btn" onClick={() => setEditing("new")}>
-            <Plus size={16} aria-hidden="true" />
-            Add organization
-          </button>
-        }
+        action={<AddButton noun="organization" onClick={() => setEditing("new")} />}
       />
       {query.isPending ? (
         <Loading />

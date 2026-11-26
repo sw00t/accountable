@@ -26,6 +26,23 @@ const backendEnv = {
   ACCOUNTABLE_SIGN_IN: "local",
 };
 
+/** A project that runs `e2e/phone/` in Chrome at a phone's size, with touch. */
+function phone(name: string, width: number, height: number) {
+  return {
+    name,
+    testMatch: /phone\/.*\.spec\.ts/,
+    use: {
+      ...devices["Desktop Chrome"],
+      channel: "chrome",
+      viewport: { width, height },
+      isMobile: true,
+      hasTouch: true,
+      deviceScaleFactor: 3,
+      locale: "en-US",
+    },
+  };
+}
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -43,6 +60,7 @@ export default defineConfig({
   projects: [
     {
       name: "chrome",
+      testIgnore: /phone\//,
       use: {
         ...devices["Desktop Chrome"],
         channel: "chrome",
@@ -50,6 +68,10 @@ export default defineConfig({
         locale: "en-US",
       },
     },
+    // The phone view (spec N1 to N7): the same Chrome emulating a phone with touch.
+    phone("phone", 390, 844),
+    phone("phone-landscape", 844, 390),
+    phone("phone-narrow", 360, 780),
   ],
   webServer: [
     {

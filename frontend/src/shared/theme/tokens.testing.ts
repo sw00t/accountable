@@ -7,8 +7,8 @@ export const tokensCss = readFileSync(join(__dirname, "tokens.css"), "utf8");
 
 export type Tokens = Record<string, string>;
 
-function block(selector: string): Tokens {
-  const start = tokensCss.indexOf(`${selector} {`);
+function block(selector: string, from = 0): Tokens {
+  const start = tokensCss.indexOf(`${selector} {`, from);
   if (start < 0) return {};
   const body = tokensCss
     .slice(tokensCss.indexOf("{", start) + 1, tokensCss.indexOf("}", start))
@@ -22,3 +22,10 @@ export const light = block(":root");
 export const darkOverrides = block(':root[data-theme="dark"]');
 /** Dark mode as the browser sees it: the light values with the dark block on top. */
 export const dark: Tokens = { ...light, ...darkOverrides };
+
+const PHONE_MEDIA = tokensCss.indexOf("@media");
+/** AMOLED dark's overrides: the dark block inside the phone media query (M6). */
+export const amoledOverrides =
+  PHONE_MEDIA < 0 ? {} : block(':root[data-theme="dark"]', PHONE_MEDIA);
+/** AMOLED dark as a phone sees it: dark mode with the AMOLED block on top. */
+export const amoled: Tokens = { ...dark, ...amoledOverrides };

@@ -103,4 +103,51 @@ export const test = base.extend<Options & { consoleErrors: string[] }, { signedI
   ],
 });
 
+
+// --- The phone view (spec N1 to N7) ---
+
+/** Whether this test runs at a phone's size in landscape. */
+export const isLandscape = (page: Page) => {
+  const size = page.viewportSize();
+  return size !== null && size.width > size.height;
+};
+
+/**
+ * N1: nothing makes the page scroll sideways. A phone's browser widens its layout to fit
+ * content that's too wide, so this compares with the phone's own width, not the window's.
+ * With `content`, the page's own content must fit too, not only the shell around it.
+ */
+export async function expectNoSideScroll(page: Page, { content = false } = {}) {
+  const width = page.viewportSize()!.width;
+  const widths = await page.evaluate(() => ({
+    page: document.documentElement.scrollWidth,
+    layout: window.innerWidth,
+    main: document.querySelector("main")?.scrollWidth ?? 0,
+    mainBox: document.querySelector("main")?.clientWidth ?? 0,
+  }));
+  expect(widths.page, "the page is wider than the phone").toBeLessThanOrEqual(width);
+  expect(widths.layout, "the browser zoomed out to fit something too wide").toBeLessThanOrEqual(width);
+  if (content) expect(widths.main, "the page's content scrolls sideways").toBeLessThanOrEqual(widths.mainBox);
+}
+
+/** N3: every visible button, link and field inside `scope` is at least 44 by 44 px. */
+export async function expectTapTargets(page: Page, scope = "body") {
+  const small = await page.locator(scope).evaluateAll((roots) =>
+    roots.flatMap((root) =>
+      [...root.querySelectorAll<HTMLElement>("a[href], button, input, select, textarea, [role=tab]")]
+        .filter((el) => el.offsetParent !== null || getComputedStyle(el).position === "fixed")
+        .map((el) => ({ el, box: el.getBoundingClientRect() }))
+        .filter(({ box }) => box.width > 0 && (box.width < 44 || box.height < 44))
+        .map(({ el, box }) => `${el.tagName} "${(el.getAttribute("aria-label") ?? el.textContent ?? "").trim()}" ${Math.round(box.width)}x${Math.round(box.height)}`),
+    ),
+  );
+  expect(small, "tap targets under 44 by 44 px").toEqual([]);
+}
+
+/** Turns the phone: swaps the viewport's width and height (N5). */
+export async function turnPhone(page: Page) {
+  const size = page.viewportSize()!;
+  await page.setViewportSize({ width: size.height, height: size.width });
+}
+
 export { expect };

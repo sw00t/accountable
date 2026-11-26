@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Plus } from "lucide-react";
 import { DataTable, type TableColumn } from "../shared/DataTable";
 import { DeleteRecord, type Deletable } from "../shared/DeleteRecord";
 import { formatDate, plural } from "../shared/format";
 import { LoadError, Loading } from "../shared/Loading";
+import { AddButton } from "../shared/AddButton";
 import { PageHeader } from "../shared/PageHeader";
 import { SidePanel } from "../shared/SidePanel";
 import { STATUSES, type Status } from "../shared/stages";
@@ -95,12 +95,7 @@ export function ContactsPage() {
             ? `${plural(counts.all, "contact")}: ${counts.lead} leads, ${counts.qualified} qualified, ${counts.customer} customers`
             : " "
         }
-        action={
-          <button type="button" className="btn" onClick={() => setEditing("new")}>
-            <Plus size={16} aria-hidden="true" />
-            Add contact
-          </button>
-        }
+        action={<AddButton noun="contact" onClick={() => setEditing("new")} />}
       />
       {/* While a new status filter loads, the previous status's rows are only a
           placeholder, so show loading rather than rows under the wrong filter. */}

@@ -6,6 +6,8 @@ import "./shared/theme/fonts";
 import "./shared/theme/global.css";
 import "./shared/theme/components.css";
 import App from "./App";
+// After every other stylesheet, so the phone rules win on a phone (they apply nowhere else).
+import "./shared/theme/phone.css";
 import { SessionGate } from "./account/SessionGate";
 import { makeQueryClient } from "./shared/queryClient";
 import { ToastProvider } from "./shared/Toast";

@@ -1,0 +1,243 @@
+/*
+ * The phone layout's shell (spec Layout on a phone, N1 to N7): the tab bar or rail, the top
+ * bar, margins, sheets and toasts. Everything sits inside the phone query, PHONE_QUERY in
+ * shared/phone.ts, so a laptop never sees it. Landscape rules hang off `.app.landscape`.
+ */
+@media (max-width: 767px), (orientation: landscape) and (max-height: 499px) {
+  body {
+    min-width: 0;
+  }
+
+  /* N3: everything that can be tapped is at least 44 by 44 px. */
+  .btn,
+  .btn.small {
+    min-height: 44px;
+    padding-inline: 14px;
+    justify-content: center;
+  }
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+  /* N7: 16 px fields, so the phone doesn't zoom in when one is tapped. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  input:not([type="checkbox"], [type="radio"]),
+  select {
+    min-height: 44px;
+  }
+
+  .app.phone {
+    display: block;
+    min-height: 100dvh;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+
+  /* The top bar stays put while the page scrolls under it. */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: auto;
+    min-height: 60px;
+    padding: 8px 12px 8px 16px;
+    gap: 4px;
+    justify-content: flex-start;
+    background: var(--page);
+  }
+  .topbar-title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+  }
+  .topbar .page-head {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+  /* The title keeps its room; an action that doesn't fit beside it goes under it. */
+  .page-title {
+    flex: 1 1 120px;
+    min-width: 0;
+  }
+  .topbar h1 {
+    font-size: 22px;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .topbar .page-title .muted {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .add-noun {
+    display: none;
+  }
+  .topbar .top-search {
+    width: auto;
+    flex: 0 1 150px;
+    min-width: 0;
+  }
+  .topbar .top-search-results {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+
+  /*
+   * Content that's too wide scrolls inside the page rather than making the phone zoom out,
+   * so the top bar and tab bar always fit. TE38 checks no page's content needs it (N1).
+   */
+  main {
+    padding: 4px 16px 24px;
+    overflow-x: auto;
+  }
+  .page-head {
+    margin-bottom: 12px;
+  }
+
+  /* N4: the sections at the bottom in portrait. */
+  .tab-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  }
+  .tab-bar a {
+    flex: 1;
+    min-width: 0;
+    min-height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font: 500 11px var(--sans);
+    color: var(--ink-muted);
+    text-decoration: none;
+  }
+  .tab-bar a.on {
+    color: var(--sea-green-text);
+  }
+  .tab-icon {
+    display: grid;
+    place-items: center;
+    padding: 4px 16px;
+    border-radius: 999px;
+  }
+  .tab-bar a.on .tab-icon {
+    background: var(--tint-sea-green);
+  }
+
+  /* N4 in landscape: the tab bar becomes a rail down the left. */
+  .app.landscape {
+    padding-bottom: 0;
+    padding-left: calc(76px + env(safe-area-inset-left));
+  }
+  .app.landscape .tab-bar {
+    top: 0;
+    right: auto;
+    width: calc(76px + env(safe-area-inset-left));
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 8px 12px calc(8px + env(safe-area-inset-left));
+  }
+  .app.landscape .tab-bar a {
+    flex: none;
+    min-height: 56px;
+    font-size: 10px;
+  }
+  .app.landscape .tab-icon {
+    padding: 4px 12px;
+  }
+
+  .toasts {
+    left: 16px;
+    right: 16px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .app.landscape ~ .toasts {
+    left: calc(92px + env(safe-area-inset-left));
+    bottom: 16px;
+  }
+  .toast {
+    min-width: 0;
+    max-width: none;
+  }
+
+  /* Sheets rise from the bottom (shared/Sheet.tsx). */
+  .sheet-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: var(--scrim);
+  }
+  .sheet {
+    max-height: 90dvh;
+    overflow-y: auto;
+    background: var(--panel);
+    border-radius: 22px 22px 0 0;
+    padding: 0 16px calc(20px + env(safe-area-inset-bottom));
+    animation: rise 0.18s ease-out;
+  }
+  .sheet:focus {
+    outline: none;
+  }
+  .sheet.full {
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    background: var(--page);
+  }
+  /* The handle's touch area is taller than the line it draws. */
+  .sheet-handle {
+    position: relative;
+    width: 72px;
+    height: 24px;
+    margin: 0 auto 4px;
+    touch-action: none;
+    cursor: grab;
+  }
+  .sheet-handle::before {
+    content: "";
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: 10px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--line);
+  }
+  .sheet-title {
+    font-size: 17px;
+    margin: 0 0 8px;
+  }
+  @keyframes rise {
+    from {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+}

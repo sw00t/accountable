@@ -1,11 +1,11 @@
 import { useCallback, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Plus } from "lucide-react";
 import { DataTable, type TableColumn } from "../shared/DataTable";
 import { DeleteRecord, type Deletable } from "../shared/DeleteRecord";
 import { formatDate, money, plural } from "../shared/format";
 import { LateBadge } from "../shared/LateBadge";
 import { LoadError, Loading } from "../shared/Loading";
+import { AddButton } from "../shared/AddButton";
 import { PageHeader } from "../shared/PageHeader";
 import { SidePanel } from "../shared/SidePanel";
 import { STAGES, stageLabel, type Stage } from "../shared/stages";
@@ -132,12 +132,7 @@ export function DealsPage() {
       <PageHeader
         title="Deals"
         summary={query.data && !query.isPlaceholderData ? dealCount(query.data.total, stage) : " "}
-        action={
-          <button type="button" className="btn" onClick={() => setEditing("new")}>
-            <Plus size={16} aria-hidden="true" />
-            Add deal
-          </button>
-        }
+        action={<AddButton noun="deal" onClick={() => setEditing("new")} />}
       />
       {/* While a new stage filter loads, the previous stage's rows are only a
           placeholder, so show loading rather than rows under the wrong filter. */}

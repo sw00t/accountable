@@ -1,5 +1,5 @@
 // TF19 (spec M5, Colors): text meets its contrast rule on every surface it sits on, in both modes.
-import { dark, light, type Tokens } from "./tokens.testing";
+import { amoled, dark, light, type Tokens } from "./tokens.testing";
 
 const SMALL = 4.5;
 const LARGE = 3;
@@ -55,6 +55,26 @@ const BY_MODE: Record<string, { tokens: Tokens; pairs: Pair[] }> = {
       // Light mode's pale stages never met this on white and stay as they are (intent: light
       // looks exactly as before). The spec claims stage contrast for dark mode only.
       ...STAGES.flatMap((stage) => pairs(`--stage-${stage}`, ["--page", "--panel"], LARGE)),
+    ],
+  },
+  // TF35: AMOLED dark on a phone (M6), on the black page, the panels and what's raised in them.
+  amoled: {
+    tokens: amoled,
+    pairs: [
+      ...SHARED,
+      ...pairs("--ink", ["--raised"]),
+      ...pairs("--ink-muted", [
+        "--page",
+        "--panel",
+        "--raised",
+        "--hover",
+        "--table-head",
+        "--field",
+      ]),
+      ...TEXT_SHADES.flatMap((name) => pairs(`--${name}-text`, ["--page", "--panel", "--raised"])),
+      ...STAGES.flatMap((stage) =>
+        pairs(`--stage-${stage}`, ["--page", "--panel", "--raised"], LARGE),
+      ),
     ],
   },
 };

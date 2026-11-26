@@ -22,7 +22,7 @@ Three choices keep the parts apart and the laptop unchanged:
 
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
-| `frontend/src/shared/phone.ts` | `PHONE_QUERY`, the phone media query from CN24 (`(max-width: 767px), (orientation: landscape) and (max-height: 499px)`), and `usePhone()`, which follows it with `useSyncExternalStore`, so a component re-renders when the phone turns or a window is resized across it | [W1.1](#w1-1) | New |
+| `frontend/src/shared/phone.ts` | `PHONE_QUERY`, the phone media query from CN24 (`(max-width: 767px), (orientation: landscape) and (max-height: 499px)`), and `usePhone()`, which follows it with `useSyncExternalStore`, so a component re-renders when the phone turns or a window is resized across it. `usePhoneShape()` also says portrait or landscape: landscape rules hang off a `landscape` class on `.app` rather than a media query of their own, since laptops are landscape too, and TF34 allows only the phone query in stylesheets | [W1.1](#w1-1) | New |
 | `frontend/src/shared/theme/tokens.css` | AMOLED dark (M6): inside the phone query, `:root[data-theme="dark"]` overrides `--page`, `--panel`, a new `--raised`, `--line`, `--hover`, `--table-head`, `--field`, `--field-border`, `--scrim` and the shadows, with the values in the spec's AMOLED table. `--raised` gets a light and a dark value too, so the light tokens still define every token | [W1.1](#w1-1) | Changed |
 | `frontend/src/shared/theme/tokens.testing.ts` | Reads the AMOLED block from inside the media query as a third set of tokens, `amoled`, layered on `dark` | [W1.1](#w1-1) | Changed |
 | `frontend/src/shared/theme/contrast.test.ts`, `colors.test.ts` | TF35: the AMOLED pairs meet M5; the AMOLED block only overrides tokens the light block defines | [W1.1](#w1-1) | Changed |
@@ -34,14 +34,16 @@ Three choices keep the parts apart and the laptop unchanged:
 
 | File | Purpose | Work | Status |
 | --- | --- | --- | --- |
-| `frontend/src/shared/Layout.tsx` | Adds the tab bar after the workspace; the sidebar stays in the markup and the stylesheet hides it on a phone | [W1.2](#w1-2) | Changed |
+| `frontend/src/shared/Layout.tsx` | Renders the sidebar on a laptop and the tab bar on a phone, from `usePhoneShape()`, so there's only ever one "Sections" navigation; gives `.app` the `phone` and `portrait` or `landscape` classes; holds the top bar's title slot | [W1.2](#w1-2) | Changed |
 | `frontend/src/shared/TabBar.tsx` | N4: the five sections as links with icon and short label, `aria-current` on the current one, in a `nav` named "Sections" on a phone. In landscape the stylesheet turns it into the rail, with the user menu's circle at its foot through a slot `UserMenu` fills | [W1.2](#w1-2) | New |
-| `frontend/src/shared/Sidebar.tsx` | Exports the section list for the tab bar to share, so the two never differ; its `nav` is named "Sections" only on a laptop, so tests and screen readers find one | [W1.2](#w1-2) | Changed |
-| `frontend/src/shared/TopBar.tsx` | On a phone: a slot on the left for the page's title and main action, and the search button and user menu on the right | [W1.2](#w1-2) | Changed |
+| `frontend/src/shared/Sidebar.tsx` | Exports the section list, with each section's short label, for the tab bar to share, so the two never differ | [W1.2](#w1-2) | Changed |
+| `frontend/src/shared/TopBar.tsx` | On a phone: a slot on the left for the page's title and main action, and the search button and user menu on the right |
+| `frontend/src/shared/topBarSlot.ts` | The context that hands the top bar's slot to `PageHeader` | [W1.2](#w1-2) | New |
+| `frontend/src/shared/AddButton.tsx` | A page's main action: "Add contact" on a laptop and "Add" on a phone, named "Add contact" for screen readers either way. Used by the contacts, deals and organizations pages from PH1 | [W1.2](#w1-2) | New | [W1.2](#w1-2) | Changed |
 | `frontend/src/shared/PageHeader.tsx` | On a phone, renders its title, summary and main action into the top bar's slot through a portal, with the action as "Add" and a plus icon (spec's Page header on a phone) | [W1.2](#w1-2) | Changed |
 | `frontend/src/shared/Sheet.tsx` | The bottom sheet: a labelled modal dialog that rises from the bottom, with a grab handle, focus moved in and returned, Escape, tap outside and dragging the handle down to close, and a `full` variant for forms. Keeps the page from scrolling under it | [W1.2](#w1-2) | New |
-| `frontend/src/shared/Toast.tsx` | Toasts sit above the tab bar on a phone | [W1.2](#w1-2) | Changed |
-| `frontend/src/shared/theme/phone.css` | The shell's phone rules: no sidebar, the tab bar and rail, the top bar, content margins, page header, sheets, toasts and AMOLED panels without shadows; field text at 16 px (N7); 44 px tap targets for every shared button (N3). Imported by `main.tsx` after `components.css` | [W1.2](#w1-2) | New |
+| `frontend/src/account/account.css` | (PH1) The account circle keeps its 32 px look with a 44 px space to tap on a phone (N3); PT5 adds the menu's sheet in PH2 | [W1.2](#w1-2) | Changed |
+| `frontend/src/shared/theme/phone.css` | The shell's phone rules: the tab bar and rail, the top bar, content margins, page header, sheets, and toasts above the tab bar; field text at 16 px (N7); 44 px tap targets for every shared button (N3); `body` without the laptop's 1280 px minimum. `main` scrolls sideways on its own as a safety net, so content that's too wide can't make the phone zoom out and push the tab bar off screen; TE38 checks no page needs it. Imported by `main.tsx` after `App`, so it comes after every other stylesheet | [W1.2](#w1-2) | New |
 | `frontend/src/main.tsx` | Imports `phone.css` | [W1.2](#w1-2) | Changed |
 | `frontend/src/shared/TabBar.test.tsx`, `Sheet.test.tsx` | TF36, TF37 | [W1.2](#w1-2) | New |
 
@@ -74,8 +76,8 @@ Three choices keep the parts apart and the laptop unchanged:
 | --- | --- | --- | --- |
 | `frontend/src/search/SearchBox.tsx` | F8: on a phone, a 44 px search button that opens search full screen with the box, Cancel and the results; the box's behaviour, `useSearch` and the keyboard are the same code | [W2.3](#w2-3) | Changed |
 | `frontend/src/search/search.css` | Full-screen search rules, inside the phone query | [W2.3](#w2-3) | Changed |
-| `frontend/src/account/UserMenu.tsx` | U13: on a phone the menu opens in a `Sheet` with the same items and keyboard use; in landscape the circle renders into the rail's slot | [W2.3](#w2-3) | Changed |
-| `frontend/src/account/account.css` | The menu sheet and the sign-in panel on a phone | [W2.3](#w2-3) | Changed |
+| `frontend/src/account/UserMenu.tsx` | U13: on a phone the menu opens in a `Sheet` with the same items and keyboard use; in landscape the stylesheet places the circle at the rail's foot | [W2.3](#w2-3) | Changed |
+| `frontend/src/account/account.css` | The menu sheet, the circle at the rail's foot in landscape, and the sign-in panel on a phone | [W2.3](#w2-3) | Changed |
 | `frontend/src/search/SearchBox.test.tsx`, `account/UserMenu.test.tsx`, `account/SignInPage.test.tsx` | TF44, TF45 | [W2.3](#w2-3) | Changed |
 
 <a id="pt6"></a>**PT6 Pipeline**
@@ -188,7 +190,7 @@ Each test fails before its work item and passes after it. The frontend tests swi
 | --- | --- | --- | --- | --- |
 | <a id="tf34"></a>TF34 | `shared/phone.test.ts` | `usePhone()` follows the media query, changing when it does; every phone `@media` rule in every stylesheet uses `PHONE_QUERY` exactly | CN24 | [R2](#r2), [R9](#r9) |
 | <a id="tf35"></a>TF35 | `shared/theme/contrast.test.ts`, `colors.test.ts` | Every AMOLED text and surface pair meets M5 against `--page`, `--panel` and `--raised`; the AMOLED block overrides only tokens the light block defines; no color outside `tokens.css` | M5, M6, CN25 | [R12](#r12) |
-| <a id="tf36"></a>TF36 | `shared/TabBar.test.tsx` | Five links in order with their labels, the current one marked for the page and its sub-pages; on a laptop the tab bar isn't shown and the sidebar's nav is the "Sections" one | N4 | None |
+| <a id="tf36"></a>TF36 | `shared/TabBar.test.tsx` | Five links in order with their labels, the current one marked; the page's title and main action in the top bar; on a laptop the sidebar instead, and a window crossing the phone size swaps one for the other | N4 | None |
 | <a id="tf37"></a>TF37 | `shared/Sheet.test.tsx` | A sheet is a labelled modal dialog; focus moves into it and back to what opened it; Escape, a tap outside and dragging the handle down close it; the page doesn't scroll while it's open | N6, U13 | [R7](#r7) |
 | <a id="tf38"></a>TF38 | `shared/DataTable.test.tsx`, `MoreMenu.test.tsx` | On a phone: rows as a list with name, second line and end; tapping a row opens it; More opens Edit and Delete; Sort by lists the columns in both orders, sorts, and marks the current one; search, filters and paging as on a laptop; switching between phone and laptop keeps the search, sort and page | T1 to T8, N5 | [R8](#r8) |
 | <a id="tf39"></a>TF39 | `shared/SidePanel.test.tsx`, `ConfirmDialog.test.tsx` | On a phone the form opens full screen with Cancel and Save at the bottom and keeps Escape and Enter; the confirm sheet has the same message with the danger button on top | T4, T6 | [R7](#r7) |
@@ -206,7 +208,7 @@ Each runs in the `phone`, `phone-landscape` and `phone-narrow` projects unless i
 
 | ID | File in `e2e/phone/` | Proves | Requirements | Risks |
 | --- | --- | --- | --- | --- |
-| <a id="te38"></a>TE38 | `layout.spec.ts` | Every page, every open sheet and form, and the sign-in screen: no sideways scroll on the page, every visible button and link at least 44 by 44 px, fields at 16 px, in light and in Dark | N1, N3, N7, SC2 | [R4](#r4), [R13](#r13) |
+| <a id="te38"></a>TE38 | `layout.spec.ts` | Every page, every open sheet and form, and the sign-in screen: no sideways scroll on the page, and the phone not zoomed out to fit something too wide (measured against the phone's own width, since a phone's browser widens its layout to fit wide content), every visible button and link at least 44 by 44 px, fields at 16 px, in light and in Dark. PH1 checks the shell on the dashboard, the pipeline and the three record pages; the three lists join in PH2, since Chrome on a phone widens the layout to fit the laptop's table even inside a clipped panel | N1, N3, N7, SC2 | [R4](#r4), [R13](#r13) |
 | <a id="te39"></a>TE39 | `layout.spec.ts` | The tab bar in portrait and the rail in landscape reach every section, with the current one marked; in Dark the page is `#000000` and panels `#0B1A1F`, and a first visit opens in it; a 1440 px window in the same test run shows the sidebar and the laptop's dark page `#04232E` | N4, M6, SC3, SC6 | [R1](#r1) |
 | <a id="te40"></a>TE40 | `tables.spec.ts` | Contacts on a phone: search, the status filter, Sort by in both orders, the page controls, More then Edit saves a change, More then Delete asks in a sheet and deletes; the same list for deals and organizations | T1 to T8, C7, D11, O5 | None |
 | <a id="te41"></a>TE41 | `journeys.spec.ts` | From the dashboard, search for a contact, open them, Log activity, type a call and a follow-up date, save: done in under 30 seconds at human typing speed, and the follow-up shows on the dashboard (`phone` only) | A7, F8, SC5 | [R6](#r6) |

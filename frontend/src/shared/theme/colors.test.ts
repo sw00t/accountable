@@ -3,7 +3,7 @@
 // Read from disk: the test setup turns CSS imports off (vite.config.ts, css: false).
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { dark, darkOverrides, light, tokensCss } from "./tokens.testing";
+import { amoled, amoledOverrides, dark, darkOverrides, light, tokensCss } from "./tokens.testing";
 
 const SRC = join(__dirname, "../..");
 const skip = (file: string) => /\.test\.tsx?$/.test(file) || file.endsWith("api-types.ts");
@@ -94,4 +94,21 @@ test("dark mode reverses the open stages and keeps Won and Lost (Concern 14)", (
     );
   const [newest, qualified, proposal, negotiation, won, lost] = stages(light);
   expect(stages(dark)).toEqual([negotiation, proposal, qualified, newest, won, lost]);
+});
+
+// TF35: AMOLED dark (M6, Concern 25) overrides a few dark tokens on a phone, and nothing else.
+test("the AMOLED block only overrides tokens the light block defines", () => {
+  expect(Object.keys(amoledOverrides).length).toBeGreaterThan(0);
+  expect(Object.keys(amoledOverrides).filter((name) => !(name in light))).toEqual([]);
+});
+
+test("AMOLED dark's surfaces are the spec's, and its text is dark mode's", () => {
+  expect([amoled["--page"], amoled["--panel"], amoled["--raised"]]).toEqual([
+    "#000000",
+    "#0b1a1f",
+    "#12252c",
+  ]);
+  expect(amoled["--shadow"]).toBe("none");
+  for (const name of ["--ink", "--ink-muted", "--sea-green-text", "--raspberry-text"])
+    expect(amoled[name]).toBe(dark[name]);
 });
